@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ТЕМНАЯ ТЕМА (SudOcean) -->
+    <color name="ocean_background">#0C1C2C</color>
+    <color name="ocean_card">#211E27</color>
+    <color name="ocean_text_primary">#FFFFFF</color>
+    <color name="ocean_text_secondary">#B3CDE0</color>
+    <color name="ocean_primary">#005B96</color>
+    <color name="ocean_light">#B3CDE0</color>
+</resources>

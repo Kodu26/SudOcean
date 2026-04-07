@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ocean_background"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_alignParentBottom="true"
+        style="@style/Widget.MaterialComponents.BottomNavigationView"
+        app:menu="@menu/menu_navbar"
+        android:background="@color/ocean_card"
+        app:itemIconTint="@color/ocean_nav_colors"
+        app:itemTextColor="@color/ocean_nav_colors"
+        app:labelVisibilityMode="labeled"
+        app:elevation="16dp" />
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/nav_host_fragment"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottomNav"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph" />
+
+</RelativeLayout>

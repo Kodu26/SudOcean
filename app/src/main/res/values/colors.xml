@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="gray">#FF888888</color>
+    <color name="red">#FFFF0000</color>
+    <color name="green">#FF00FF00</color>
+
+    <!-- Цвета для системы оплаты -->
+    <color name="sbp_blue">#005696</color>
+    <color name="sbp_yellow">#FFD500</color>
+
+    <!-- АДАПТИВНЫЕ ЦВЕТА (SudOcean) -->
+    <color name="ocean_background">#E1F5FE</color>
+    <color name="ocean_card">#FFFFFF</color>
+    <color name="ocean_text_primary">#002147</color>
+    <color name="ocean_text_secondary">#455A64</color>
+    <color name="ocean_primary">#005B96</color>
+    <color name="ocean_light">#B3CDE0</color>
+
+    <!-- СТАРЫЕ ЦВЕТА (нужны для обратной совместимости макетов) -->
+    <color name="ocean_deep">#002147</color>
+    <color name="sea_foam">#E0F2F1</color>
+    <color name="signal_red">#D32F2F</color>
+    <color name="anchor_gold">#C5A059</color>
+    <color name="slate_grey">#455A64</color>
+</resources>

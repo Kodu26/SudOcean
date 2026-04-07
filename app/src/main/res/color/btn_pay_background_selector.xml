@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Цвет фона, когда кнопка НЕ активна (тусклый синий или серый) -->
+    <item android:state_enabled="false" android:color="#4D005B96" /> <!-- ocean_primary с прозрачностью 30% -->
+
+    <!-- Цвет фона по умолчанию (активная кнопка) -->
+    <item android:color="@color/ocean_primary" />
+</selector>
