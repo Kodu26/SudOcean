@@ -1,6 +1,15 @@
 package com.example.sudocean.data
 
+import android.content.ActivityNotFoundException
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import com.example.sudocean.data.dao.CartDao
 import com.example.sudocean.data.dao.OrderDao
 import com.example.sudocean.data.dao.OrderItemDao
@@ -15,9 +24,13 @@ import com.example.sudocean.data.entities.User
 import com.example.sudocean.network.ApiService
 import com.example.sudocean.network.OrderItemRequest
 import com.example.sudocean.network.OrderRequest
+import com.example.sudocean.network.OrderResponse
+import com.example.sudocean.network.PasswordChangeRequest
 import com.example.sudocean.network.UserRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -31,41 +44,170 @@ class MainRepository(
 ) {
     private val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-    // USER
+    private fun getRemoteId(user: User): String {
+        return user.remoteId.replace(Regex("[^\\d]"), "")
+    }
+
+    // USER logic
     suspend fun loginPhysical(phone: String, password: String): User? = userDao.loginPhysical(phone, password)
     suspend fun loginLegal(inn: String, password: String): User? = userDao.loginLegal(inn, password)
+
+    suspend fun isUserExistsLocally(login: String): Boolean {
+        val cleanLogin = login.replace(Regex("[^\\d]"), "")
+        return userDao.getUserByLogin(cleanLogin) != null
+    }
+
+    suspend fun remoteLogin(type: String, identifier: String, password: String): User? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.loginRemote(identifier, password)
+                if (response.isSuccessful) {
+                    val remoteUser = response.body() ?: return@withContext null
+                    val cleanIdentifier = identifier.replace(Regex("[^\\d]"), "")
+                    
+                    val newUser = User(
+                        remoteId = cleanIdentifier,
+                        userType = remoteUser.user_type,
+                        fullName = remoteUser.full_name,
+                        phone = remoteUser.phone,
+                        password = password,
+                        inn = remoteUser.inn,
+                        kpp = remoteUser.kpp,
+                        legalAddress = remoteUser.legal_address
+                    )
+                    val id = userDao.register(newUser)
+                    return@withContext newUser.copy(id = id.toInt())
+                }
+                null
+            } catch (e: Exception) {
+                Log.e("1C_AUTH", "Remote login error: ${e.message}")
+                null
+            }
+        }
+    }
+
+    suspend fun verifyUserRemote(user: User): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val remoteId = getRemoteId(user)
+                val response = apiService.getUserOrders(remoteId)
+                if (response.isSuccessful) return@withContext true
+                if (response.code() == 404 || response.code() == 401) {
+                    userDao.deleteUser(user)
+                    return@withContext false
+                }
+                false
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
     suspend fun register(user: User): Long {
+        // 1. Синхронизируем с 1С (is_registration = true)
+        syncUserWith1C(user, isRegistration = true)
+
+        // 2. Если 1С не вернула ошибку, сохраняем локально
         val id = userDao.register(user)
-        syncUserWith1C(user.copy(id = id.toInt()))
         return id
     }
+
     suspend fun updateUser(user: User) {
-        userDao.updateUser(user)
-        syncUserWith1C(user)
+        // 1. Синхронизируем с 1С (is_registration = false)
+        // В 1С передается текущий remoteId для поиска
+        syncUserWith1C(user, isRegistration = false)
+        
+        // 2. После успешной синхронизации обновляем remoteId в Room,
+        // так как 1С обновила ID_МобильногоПользователя на основе нового телефона/ИНН
+        val cleanPhone = user.phone.replace(Regex("[^\\d]"), "")
+        val newRemoteId = if (user.userType == "LEGAL") (user.inn ?: user.remoteId) else cleanPhone
+        
+        val updatedUser = user.copy(remoteId = newRemoteId)
+        userDao.updateUser(updatedUser)
     }
-    private suspend fun syncUserWith1C(user: User) {
-        try {
-            val request = UserRequest(user.id.toString(), user.userType, user.fullName, user.phone, user.inn, user.kpp, user.legalAddress)
-            apiService.syncUser(request)
-        } catch (e: Exception) { Log.e("1C_SYNC", "User sync failed: ${e.message}") }
+
+    suspend fun changePassword(user: User, oldPass: String, newPass: String) {
+        withContext(Dispatchers.IO) {
+            val remoteId = getRemoteId(user)
+            val request = PasswordChangeRequest(id = remoteId, old_password = oldPass, new_password = newPass)
+            try {
+                val response = apiService.changePassword(request)
+                if (response.isSuccessful) {
+                    val updatedUser = user.copy(password = newPass)
+                    userDao.updateUser(updatedUser)
+                } else {
+                    throw Exception(response.errorBody()?.string() ?: "Ошибка смены пароля")
+                }
+            } catch (e: Exception) { throw e }
+        }
     }
+
+    suspend fun deleteAccount(user: User) {
+        withContext(Dispatchers.IO) {
+            val remoteId = getRemoteId(user)
+            try {
+                val response = apiService.deleteAccount(remoteId)
+                if (response.isSuccessful || response.code() == 404) {
+                    userDao.deleteUser(user)
+                } else {
+                    throw Exception("Ошибка удаления аккаунта")
+                }
+            } catch (e: Exception) { throw e }
+        }
+    }
+
+    private suspend fun syncUserWith1C(user: User, isRegistration: Boolean) {
+        withContext(Dispatchers.IO) {
+            val request = UserRequest(
+                id = getRemoteId(user),
+                user_type = user.userType,
+                full_name = user.fullName,
+                phone = user.phone,
+                password = user.password,
+                inn = user.inn,
+                kpp = user.kpp,
+                legal_address = user.legalAddress,
+                is_registration = isRegistration
+            )
+            val response = apiService.syncUser(request)
+            if (!response.isSuccessful) {
+                if (response.code() == 409) {
+                    throw Exception("Этот телефон/инн уже зарегистрирован")
+                }
+                val errorMsg = response.errorBody()?.string() ?: "Неизвестная ошибка 1С"
+                throw Exception(errorMsg)
+            }
+        }
+    }
+
     fun getUserByIdFlow(userId: Int): Flow<User?> = userDao.getUserById(userId)
     suspend fun getUserById(userId: Int): User? = userDao.getUserByIdDirect(userId)
 
     // PRODUCTS
     val allProducts: Flow<List<Product>> = productDao.getAllProducts()
+    suspend fun getProductById(productId: Int): Product? = productDao.getProductById(productId)
+
     suspend fun syncProducts() {
         try {
             val response = apiService.getProducts()
             if (response.isSuccessful) {
                 response.body()?.forEach { remote ->
-                    productDao.insertProduct(Product(remote.id.toIntOrNull() ?: 0, remote.name, remote.description, remote.price))
+                    val product = Product(
+                        id = remote.id.toIntOrNull() ?: 0,
+                        name = remote.name,
+                        description = remote.description,
+                        price = remote.price,
+                        imageUrl = remote.imageUrl,
+                        category = remote.category ?: "Без категории",
+                        stock = remote.stock ?: 0
+                    )
+                    productDao.insertProduct(product)
                 }
             }
         } catch (e: Exception) { Log.e("1C_SYNC", "Products sync error: ${e.message}") }
     }
 
-    // CART
+    // CART logic
     fun getCartItems(userId: Int): Flow<List<CartItem>> = cartDao.getCartItems(userId)
     suspend fun addToCart(cartItem: CartItem) = cartDao.addToCart(cartItem)
     suspend fun updateCartQuantity(cartItem: CartItem) = cartDao.updateQuantity(cartItem)
@@ -79,30 +221,19 @@ class MainRepository(
     suspend fun getOrderById(orderId: Int): Order? = orderDao.getOrderById(orderId)
     suspend fun insertOrderItems(items: List<OrderItem>) = orderItemDao.insertOrderItems(items)
 
-    // Синхронизация истории
     suspend fun syncOrdersFrom1C(userId: Int) {
         try {
-            val response = apiService.getUserOrders(userId.toString())
+            val user = userDao.getUserByIdDirect(userId) ?: return
+            val remoteUserId = getRemoteId(user)
+            val response = apiService.getUserOrders(remoteUserId)
             if (response.isSuccessful) {
                 val remoteOrders = response.body()
                 orderDao.deleteUserOrders(userId)
-                
                 remoteOrders?.forEach { remoteOrder ->
                     val parsedDate = try { isoDateFormat.parse(remoteOrder.date)?.time ?: System.currentTimeMillis() } catch (e: Exception) { System.currentTimeMillis() }
-                    
-                    // Используем реальный ID из 1С или стабильный номер
-                    val orderIdForDb = if (remoteOrder.id > 0) remoteOrder.id else remoteOrder.remote_id.filter { it.isDigit() }.toIntOrNull() ?: (1000..99999).random()
-                    
-                    val localOrder = Order(
-                        id = orderIdForDb,
-                        userId = userId,
-                        date = parsedDate,
-                        totalAmount = remoteOrder.total_amount,
-                        status = remoteOrder.status + " (№" + remoteOrder.remote_id + ")"
-                    )
+                    val localId = remoteOrder.remote_id.filter { it.isDigit() }.toIntOrNull() ?: (1000..99999).random()
+                    val localOrder = Order(id = localId, userId = userId, date = parsedDate, totalAmount = remoteOrder.total_amount, status = remoteOrder.status + " (№" + remoteOrder.remote_id + ")")
                     orderDao.insertOrder(localOrder)
-                    
-                    orderItemDao.deleteOrderItems(localOrder.id)
                     val localItems = remoteOrder.items.map { item ->
                         OrderItem(orderId = localOrder.id, productId = item.product_id.toIntOrNull() ?: 0, productName = item.product_name, quantity = item.quantity, price = item.price)
                     }
@@ -112,38 +243,73 @@ class MainRepository(
         } catch (e: Exception) { Log.e("1C_DEBUG", "Sync error: ${e.message}") }
     }
 
-    // ОТМЕНА ЗАКАЗА В 1С
-    suspend fun cancelOrderIn1C(order: Order): Boolean {
-        return try {
-            val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
-            Log.d("1C_DEBUG", "Попытка отмены в 1С заказа: $orderNumber")
-            
-            if (orderNumber.isNotEmpty()) {
-                val response = apiService.cancelOrder(orderNumber)
+    suspend fun downloadAndOpenInvoice(context: Context, order: Order) {
+        withContext(Dispatchers.IO) {
+            try {
+                val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
+                if (orderNumber.isEmpty()) return@withContext
+                val response = apiService.downloadInvoice(orderNumber)
                 if (response.isSuccessful) {
-                    Log.d("1C_DEBUG", "1С подтвердила отмену заказа $orderNumber")
-                    true
-                } else {
-                    Log.e("1C_DEBUG", "1С отклонила отмену: ${response.code()} ${response.errorBody()?.string()}")
-                    false
+                    val body = response.body() ?: return@withContext
+                    val fileName = "Invoice_${orderNumber}_${System.currentTimeMillis()}.pdf"
+                    val uri = saveFileToDownloads(context, body, fileName)
+                    if (uri != null) { withContext(Dispatchers.Main) { openPdf(context, uri) } }
                 }
-            } else false
-        } catch (e: Exception) {
-            Log.e("1C_DEBUG", "Network error during cancel: ${e.message}")
-            false
+            } catch (e: Exception) { Log.e("1C_DEBUG", "Download failed: ${e.message}") }
         }
     }
 
-    // SEND TO 1C
-    suspend fun sendOrderTo1C(user: User, order: Order, cartItems: List<CartItem>, products: List<Product>): String? {
+    private fun saveFileToDownloads(context: Context, body: ResponseBody, fileName: String): Uri? {
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+        }
+        return try {
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            uri?.also {
+                resolver.openOutputStream(it)?.use { outputStream ->
+                    body.byteStream().use { inputStream -> inputStream.copyTo(outputStream) }
+                }
+            }
+        } catch (e: Exception) { null }
+    }
+
+    private fun openPdf(context: Context, uri: Uri) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "Установите PDF-просмотрщик", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    suspend fun cancelOrderIn1C(order: Order): Boolean {
+        return try {
+            val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
+            if (orderNumber.isNotEmpty()) {
+                val response = apiService.cancelOrder(orderNumber)
+                response.isSuccessful
+            } else { false }
+        } catch (e: Exception) { false }
+    }
+
+    suspend fun sendOrderTo1C(user: User, order: Order, cartItems: List<CartItem>, products: List<Product>): OrderResponse? {
         return try {
             val itemsRequest = cartItems.map { cartItem ->
                 val p = products.find { it.id == cartItem.productId }
                 OrderItemRequest(cartItem.productId.toString(), cartItem.quantity.toDouble(), p?.price ?: 0.0)
             }
-            val request = OrderRequest(user.id.toString(), user.fullName, user.phone, order.totalAmount, itemsRequest)
+            val request = OrderRequest(getRemoteId(user), user.fullName, user.phone, order.totalAmount, itemsRequest)
             val response = apiService.sendOrder(request)
-            if (response.isSuccessful) response.body()?.order_number ?: "000" else null
+            if (response.isSuccessful) response.body() else null
         } catch (e: Exception) { null }
     }
 }

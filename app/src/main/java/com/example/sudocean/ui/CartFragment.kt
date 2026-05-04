@@ -11,6 +11,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.sudocean.R
 import com.example.sudocean.SudOceanApplication
+import com.example.sudocean.data.entities.User
 import com.example.sudocean.databinding.FragmentCartBinding
 import com.example.sudocean.models.CartViewModel
 import com.example.sudocean.models.CartViewModelFactory
@@ -27,6 +28,7 @@ class CartFragment : Fragment() {
     }
 
     private lateinit var adapter: CartAdapter
+    private var currentUser: User? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,6 +45,10 @@ class CartFragment : Fragment() {
         observeViewModel()
 
         binding.btnPay.setOnClickListener {
+            if (viewModel.cartProducts.value.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "Корзина пуста", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             viewModel.checkout()
         }
 
@@ -50,22 +56,25 @@ class CartFragment : Fragment() {
             viewModel.clearAll()
         }
         
-        viewModel.lastOrderId.observe(viewLifecycleOwner) { orderId ->
-            if (orderId != null) {
+        viewModel.checkoutData.observe(viewLifecycleOwner) { data ->
+            if (data != null) {
+                val (orderId, amount) = data
                 val bundle = bundleOf(
                     "order_id" to orderId,
-                    "total_amount" to (viewModel.totalAmount.value ?: 0.0)
+                    "total_amount" to amount
                 )
-                viewModel.clearLastOrderId()
-                findNavController().navigate(R.id.action_cartFragment_to_paymentFragment, bundle)
+                viewModel.clearCheckoutData()
+                
+                // Теперь ВСЕ типы аккаунтов идут сначала на подтверждение (PaymentProcessFragment)
+                findNavController().navigate(R.id.action_cartFragment_to_paymentProcessFragment, bundle)
             }
         }
     }
 
     private fun setupRecyclerView() {
         adapter = CartAdapter(
-            onPlusClick = { product -> viewModel.increaseQuantity(product) },
-            onMinusClick = { product -> viewModel.decreaseQuantity(product) }
+            onPlusClick = { cartProduct -> viewModel.increaseQuantity(cartProduct) },
+            onMinusClick = { cartProduct -> viewModel.decreaseQuantity(cartProduct) }
         )
         binding.rvCartItems.adapter = adapter
     }
@@ -82,14 +91,17 @@ class CartFragment : Fragment() {
 
         viewModel.currentUser.observe(viewLifecycleOwner) { user ->
             user?.let {
+                currentUser = it
                 binding.tvDisplayName.text = it.fullName
                 binding.tvDisplayPhone.text = "Тел: ${it.phone}"
                 
                 if (it.userType == "LEGAL") {
                     binding.tvDisplayInn.text = "ИНН: ${it.inn}"
                     binding.tvDisplayInn.visibility = View.VISIBLE
+                    binding.btnPay.text = "Оформить заказ"
                 } else {
                     binding.tvDisplayInn.visibility = View.GONE
+                    binding.btnPay.text = "К оплате"
                 }
             }
         }

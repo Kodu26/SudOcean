@@ -5,6 +5,9 @@ import android.content.Context
 import com.example.sudocean.data.AppDatabase
 import com.example.sudocean.data.MainRepository
 import com.example.sudocean.network.NetworkClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class SudOceanApplication : Application() {
     // Инициализируем базу данных лениво
@@ -20,7 +23,7 @@ class SudOceanApplication : Application() {
             database.productDao(), 
             database.cartDao(), 
             database.orderDao(),
-            database.orderItemDao(), // ДОБАВЛЕНО
+            database.orderItemDao(),
             apiService
         ) 
     }
@@ -30,8 +33,20 @@ class SudOceanApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Загружаем сохраненный ID пользователя при запуске
+        
+        // Очистка старых аккаунтов (инструмент для разработки/исправления базы)
+        // Разово очищаем таблицу пользователей, чтобы гарантировать синхронность с 1С
         val sharedPref = getSharedPreferences("SudOceanPrefs", Context.MODE_PRIVATE)
+        val isDbCleaned = sharedPref.getBoolean("db_cleaned_v1", false)
+        if (!isDbCleaned) {
+            CoroutineScope(Dispatchers.IO).launch {
+                database.userDao().deleteAllUsers()
+                clearUserSession()
+                sharedPref.edit().putBoolean("db_cleaned_v1", true).apply()
+            }
+        }
+
+        // Загружаем сохраненный ID пользователя при запуске
         currentUserId = sharedPref.getInt("current_user_id", -1)
     }
 

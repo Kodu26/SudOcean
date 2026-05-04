@@ -33,117 +33,255 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:animateLayoutChanges="true"
                     android:padding="20dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ваш профиль"
-                        android:textColor="@color/ocean_text_primary"
-                        android:textSize="22sp"
-                        android:textStyle="bold"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="16dp"/>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    <RelativeLayout
+                        android:id="@+id/btn_toggle_profile"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Наименование / ФИО"
-                        app:boxStrokeColor="@color/ocean_primary">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/et_profile_name"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/ocean_text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackground">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Телефон"
-                        app:boxStrokeColor="@color/ocean_primary">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/et_profile_phone"
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:id="@+id/tv_profile_header"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:inputType="phone"
-                            android:textColor="@color/ocean_text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:text="Ваш профиль"
+                            android:textColor="@color/ocean_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_centerVertical="true"
+                            android:layout_centerHorizontal="true"/>
 
+                        <ImageView
+                            android:id="@+id/iv_profile_arrow"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:src="@android:drawable/ic_menu_more"
+                            app:tint="@color/ocean_primary" />
+                    </RelativeLayout>
+
+                    <!-- Выезжающая часть профиля -->
                     <LinearLayout
-                        android:id="@+id/layout_profile_legal"
+                        android:id="@+id/layout_profile_expandable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:visibility="gone"
+                        android:layout_marginTop="16dp"
                         tools:visibility="visible">
 
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_edit_mode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Режим редактирования"
+                            android:textColor="@color/ocean_text_secondary"
+                            android:layout_marginBottom="16dp"
+                            app:thumbTint="@color/anchor_gold"
+                            app:trackTint="@color/ocean_text_secondary" />
+
                         <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_profile_name"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="ИНН"
-                            app:boxStrokeColor="@color/ocean_primary">
+                            android:hint="Наименование / ФИО"
+                            app:boxStrokeColor="@color/ocean_primary"
+                            app:errorEnabled="true">
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/et_profile_inn"
+                                android:id="@+id/et_profile_name"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="number"
                                 android:textColor="@color/ocean_text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_profile_phone"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="КПП"
-                            app:boxStrokeColor="@color/ocean_primary">
+                            android:layout_marginTop="4dp"
+                            android:hint="Телефон"
+                            app:boxStrokeColor="@color/ocean_primary"
+                            app:errorEnabled="true">
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/et_profile_kpp"
+                                android:id="@+id/et_profile_phone"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="number"
+                                android:inputType="phone"
                                 android:textColor="@color/ocean_text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        <LinearLayout
+                            android:id="@+id/layout_profile_legal"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:hint="Юридический адрес"
-                            app:boxStrokeColor="@color/ocean_primary">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/et_profile_legal_address"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_profile_inn"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/ocean_text_primary" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:layout_marginTop="4dp"
+                                android:hint="ИНН"
+                                app:boxStrokeColor="@color/ocean_primary"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_profile_inn"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:maxLength="12"
+                                    android:textColor="@color/ocean_text_primary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_profile_kpp"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="КПП"
+                                app:boxStrokeColor="@color/ocean_primary"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_profile_kpp"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:maxLength="9"
+                                    android:textColor="@color/ocean_text_primary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_profile_legal_address"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="Юридический адрес"
+                                app:boxStrokeColor="@color/ocean_primary"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_profile_legal_address"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/ocean_text_primary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_save_profile"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginTop="20dp"
+                            android:text="Сохранить"
+                            android:textStyle="bold"
+                            app:cornerRadius="12dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_show_change_password"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Сменить пароль"
+                            android:textColor="@color/ocean_primary" />
+
+                        <!-- Секция смены пароля (скрыта) -->
+                        <LinearLayout
+                            android:id="@+id/layout_change_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_old_password"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:hint="Старый пароль"
+                                app:passwordToggleEnabled="true"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_old_password"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textPassword" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_new_password"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="Новый пароль"
+                                app:passwordToggleEnabled="true"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_new_password"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textPassword" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_confirm_password"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="Повторите новый пароль"
+                                app:passwordToggleEnabled="true"
+                                app:errorEnabled="true">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/et_confirm_password"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textPassword" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_confirm_password_change"
+                                android:layout_width="match_parent"
+                                android:layout_height="50dp"
+                                android:layout_marginTop="8dp"
+                                android:text="Подтвердить смену"
+                                app:cornerRadius="8dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_logout"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/logout"
+                            android:textColor="@color/signal_red" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_delete_account"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginTop="4dp"
+                            android:text="Удалить аккаунт"
+                            android:textColor="@color/signal_red"
+                            android:textSize="12sp" />
                     </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_save_profile"
-                        android:layout_width="match_parent"
-                        android:layout_height="55dp"
-                        android:layout_marginTop="20dp"
-                        android:text="Сохранить в 1С"
-                        android:textStyle="bold"
-                        app:cornerRadius="12dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_logout"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/logout"
-                        android:textColor="@color/signal_red" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

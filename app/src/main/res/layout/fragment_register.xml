@@ -23,7 +23,6 @@
             android:textSize="28sp"
             android:textStyle="bold" />
 
-        <!-- Переключатель типа лица -->
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/toggle_user_type"
             android:layout_width="wrap_content"
@@ -49,14 +48,15 @@
                 android:text="Юр. лицо" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
-        <!-- Общие поля -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_name"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:hint="Наименование / ФИО"
-            app:boxStrokeColor="@color/ocean_primary">
+            app:boxStrokeColor="@color/ocean_primary"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_name"
@@ -65,7 +65,6 @@
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Поля только для Юр. лиц (скрыты по умолчанию) -->
         <LinearLayout
             android:id="@+id/layout_legal_only"
             android:layout_width="match_parent"
@@ -75,44 +74,52 @@
             tools:visibility="visible">
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_inn"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="4dp"
                 android:hint="ИНН"
-                app:boxStrokeColor="@color/ocean_primary">
+                app:boxStrokeColor="@color/ocean_primary"
+                app:errorEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_inn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="number"
+                    android:maxLength="12"
                     android:textColor="@color/ocean_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_kpp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="4dp"
                 android:hint="КПП"
-                app:boxStrokeColor="@color/ocean_primary">
+                app:boxStrokeColor="@color/ocean_primary"
+                app:errorEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_kpp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="number"
+                    android:maxLength="9"
                     android:textColor="@color/ocean_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_legal_address"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="4dp"
                 android:hint="Юридический адрес"
-                app:boxStrokeColor="@color/ocean_primary">
+                app:boxStrokeColor="@color/ocean_primary"
+                app:errorEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_legal_address"
@@ -123,12 +130,14 @@
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_phone"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:hint="Номер телефона"
-            app:boxStrokeColor="@color/ocean_primary">
+            app:boxStrokeColor="@color/ocean_primary"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_phone"
@@ -139,12 +148,14 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_password"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:hint="Пароль"
             app:boxStrokeColor="@color/ocean_primary"
+            app:errorEnabled="true"
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -159,7 +170,7 @@
             android:id="@+id/register_button"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="24dp"
             android:text="Создать аккаунт"
             android:textSize="16sp"
             android:textStyle="bold"

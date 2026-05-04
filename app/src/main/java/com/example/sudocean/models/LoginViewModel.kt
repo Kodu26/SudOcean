@@ -11,12 +11,26 @@ class LoginViewModel(private val repository: MainRepository) : ViewModel() {
 
     fun login(type: String, identifier: String, password: String, onResult: (User?) -> Unit) {
         viewModelScope.launch {
-            val user = if (type == "PHYSICAL") {
+            // 1. Проверяем локально
+            val localUser = if (type == "PHYSICAL") {
                 repository.loginPhysical(identifier, password)
             } else {
                 repository.loginLegal(identifier, password)
             }
-            onResult(user)
+
+            if (localUser != null) {
+                // 2. Если есть локально, проверяем актуальность в 1С
+                val isStillExistsIn1C = repository.verifyUserRemote(localUser)
+                if (isStillExistsIn1C) {
+                    onResult(localUser)
+                } else {
+                    onResult(null)
+                }
+            } else {
+                // 3. НОВОЕ: Если локально не найден, пробуем авторизоваться через 1С
+                val remoteUser = repository.remoteLogin(type, identifier, password)
+                onResult(remoteUser)
+            }
         }
     }
 }

@@ -9,5 +9,7 @@ data class Product(
     val name: String,
     val description: String,
     val price: Double,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val category: String = "Без категории",
+    val stock: Int = 0 // Новое поле: Остаток товара
 )

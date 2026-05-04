@@ -30,15 +30,28 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_payment_title" />
 
+    <TextView
+        android:id="@+id/tv_payment_deadline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Оплатите не позднее: ..."
+        android:textColor="@color/signal_red"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_payment_amount" />
+
     <ImageView
         android:id="@+id/iv_qr_code"
         android:layout_width="220dp"
         android:layout_height="220dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
         android:src="@android:drawable/ic_dialog_info"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_payment_amount" />
+        app:layout_constraintTop_toBottomOf="@id/tv_payment_deadline" />
 
     <TextView
         android:id="@+id/tv_qr_hint"
@@ -56,9 +69,9 @@
         android:id="@+id/btn_pay_bank"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="32dp"
         android:backgroundTint="@color/sbp_blue"
-        android:text="Перейти к оплате (Имитация банка)"
+        android:text="Оплатить в приложении банка"
         android:textAllCaps="false"
         android:textColor="@color/white"
         android:textSize="16sp"

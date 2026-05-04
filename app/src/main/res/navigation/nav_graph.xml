@@ -12,11 +12,14 @@
         tools:layout="@layout/fragment_login" >
         <action
             android:id="@+id/action_loginFragment_to_itemFragment"
-            app:destination="@id/itemFragment" />
+            app:destination="@id/itemFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
         <action
             android:id="@+id/action_loginFragment_to_regFragment"
             app:destination="@id/regFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/itemFragment"
         android:name="com.example.sudocean.ui.ItemFragment"
@@ -28,21 +31,31 @@
         <action
             android:id="@+id/action_itemFragment_to_cartFragment"
             app:destination="@id/cartFragment" />
+        <action
+            android:id="@+id/action_itemFragment_to_productDetailFragment"
+            app:destination="@id/productDetailFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/cartFragment"
         android:name="com.example.sudocean.ui.CartFragment"
         android:label="fragment_cart"
         tools:layout="@layout/fragment_cart" >
         <action
-            android:id="@+id/action_cartFragment_to_paymentFragment"
-            app:destination="@id/paymentFragment" />
+            android:id="@+id/action_cartFragment_to_paymentProcessFragment"
+            app:destination="@id/paymentProcessFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/orderFragment"
         android:name="com.example.sudocean.ui.ProfileFragment"
         android:label="fragment_order"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile" >
+        <action
+            android:id="@+id/action_orderFragment_to_paymentFragment"
+            app:destination="@id/paymentFragment" />
+    </fragment>
+
     <fragment
         android:id="@+id/regFragment"
         android:name="com.example.sudocean.ui.RegFragment"
@@ -50,22 +63,16 @@
         tools:layout="@layout/fragment_reg" >
         <action
             android:id="@+id/action_regFragment_to_loginFragment"
-            app:destination="@id/loginFragment" />
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
     </fragment>
+
     <fragment
         android:id="@+id/paymentFragment"
         android:name="com.example.sudocean.ui.PaymentFragment"
         android:label="fragment_payment"
-        tools:layout="@layout/fragment_payment" >
-        <action
-            android:id="@+id/action_paymentFragment_to_itemFragment"
-            app:destination="@id/itemFragment"
-            app:popUpTo="@id/itemFragment"
-            app:popUpToInclusive="true" />
-        <action
-            android:id="@+id/action_paymentFragment_to_paymentProcessFragment"
-            app:destination="@id/paymentProcessFragment" />
-    </fragment>
+        tools:layout="@layout/fragment_payment" />
 
     <fragment
         android:id="@+id/paymentProcessFragment"
@@ -73,10 +80,18 @@
         android:label="fragment_payment_process"
         tools:layout="@layout/fragment_payment_process" >
         <action
-            android:id="@+id/action_paymentProcessFragment_to_itemFragment"
-            app:destination="@id/itemFragment"
-            app:popUpTo="@id/itemFragment"
-            app:popUpToInclusive="true" />
+            android:id="@+id/action_paymentProcessFragment_to_paymentFragment"
+            app:destination="@id/paymentFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/productDetailFragment"
+        android:name="com.example.sudocean.ui.ProductDetailFragment"
+        android:label="Детали товара"
+        tools:layout="@layout/fragment_product_detail" >
+        <argument
+            android:name="product_id"
+            app:argType="integer" />
     </fragment>
 
 </navigation>

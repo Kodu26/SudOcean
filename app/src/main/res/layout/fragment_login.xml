@@ -57,7 +57,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
             android:hint="Номер телефона"
-            app:boxStrokeColor="@color/ocean_primary">
+            app:boxStrokeColor="@color/ocean_primary"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_login_identifier"
@@ -68,12 +69,14 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_login_password"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:hint="Пароль"
             app:boxStrokeColor="@color/ocean_primary"
+            app:errorEnabled="true"
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -84,11 +87,23 @@
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <TextView
+            android:id="@+id/tv_forgot_password"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:text="Забыли пароль?"
+            android:textColor="@color/ocean_primary"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackground" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/Login_button"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="16dp"
             android:text="Войти"
             android:textSize="18sp"
             android:textStyle="bold"

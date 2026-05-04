@@ -2,12 +2,14 @@ package com.example.sudocean.models
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import com.example.sudocean.data.MainRepository
 import com.example.sudocean.data.entities.User
-import kotlinx.coroutines.launch
 
 class RegViewModel(private val repository: MainRepository) : ViewModel() {
+
+    suspend fun checkUserExists(login: String): Boolean {
+        return repository.isUserExistsLocally(login)
+    }
 
     suspend fun register(user: User): Long {
         return repository.register(user)

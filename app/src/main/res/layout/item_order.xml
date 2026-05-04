@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
@@ -59,7 +60,6 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- Контейнер для списка товаров (скрыт по умолчанию) -->
         <LinearLayout
             android:id="@+id/items_container"
             android:layout_width="match_parent"
@@ -68,17 +68,45 @@
             android:orientation="vertical"
             android:visibility="gone" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_cancel_order"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
             android:layout_marginTop="8dp"
-            android:text="Отменить заказ"
-            android:textColor="@color/signal_red"
-            android:visibility="gone"
-            app:rippleColor="@color/signal_red" />
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pay_order"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Оплатить"
+                android:textColor="@color/sbp_blue"
+                android:visibility="gone"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="@color/sbp_blue" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_download_invoice"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Скачать счет"
+                android:textColor="@color/anchor_gold"
+                android:visibility="gone"
+                app:icon="@android:drawable/stat_sys_download"
+                app:iconTint="@color/anchor_gold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel_order"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Отменить заказ"
+                android:textColor="@color/signal_red"
+                android:visibility="gone"
+                app:rippleColor="@color/signal_red" />
+        </LinearLayout>
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

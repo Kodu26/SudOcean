@@ -2,10 +2,13 @@ package com.example.sudocean
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.sudocean.databinding.ActivityMainBinding
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,32 +23,41 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         
-        // Настраиваем граф навигации программно для авто-входа
-        val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
         val app = application as SudOceanApplication
+        val navGraph = navController.navInflater.inflate(R.navigation.nav_graph)
         
         if (app.currentUserId != -1) {
-            // Если пользователь авторизован, меняем точку входа на каталог
             navGraph.setStartDestination(R.id.itemFragment)
+            lifecycleScope.launch {
+                val user = app.repository.getUserById(app.currentUserId)
+                if (user != null) {
+                    val exists = app.repository.verifyUserRemote(user)
+                    if (!exists) {
+                        app.clearUserSession()
+                        navController.navigate(R.id.loginFragment)
+                    }
+                }
+            }
         } else {
             navGraph.setStartDestination(R.id.loginFragment)
         }
         navController.graph = navGraph
 
-        // Привязываем нижнее меню
         binding.bottomNav.setupWithNavController(navController)
 
-        // Скрываем/показываем меню
+        // Только управление видимостью. Синхронизацию иконок NavigationUI сделает сам.
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            if (destination.id == R.id.loginFragment || destination.id == R.id.regFragment || destination.id == R.id.paymentProcessFragment) {
-                binding.bottomNav.visibility = View.GONE
-            } else {
-                binding.bottomNav.visibility = View.VISIBLE
+            when (destination.id) {
+                R.id.loginFragment, 
+                R.id.regFragment, 
+                R.id.paymentProcessFragment, 
+                R.id.paymentFragment -> {
+                    binding.bottomNav.visibility = View.GONE
+                }
+                else -> {
+                    binding.bottomNav.visibility = View.VISIBLE
+                }
             }
         }
-    }
-
-    fun showBottomNav() {
-        binding.bottomNav.visibility = View.VISIBLE
     }
 }

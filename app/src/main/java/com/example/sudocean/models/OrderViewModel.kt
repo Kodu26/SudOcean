@@ -16,7 +16,6 @@ import com.example.sudocean.data.entities.User
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +45,7 @@ class OrderViewModel(application: Application, private val repository: MainRepos
             if (userId != -1) {
                 _isLoading.value = true
                 repository.syncOrdersFrom1C(userId)
+                repository.syncProducts() // Синхронизируем товары тоже
                 _isLoading.value = false
             }
         }
@@ -54,13 +54,16 @@ class OrderViewModel(application: Application, private val repository: MainRepos
     fun cancelOrder(order: Order) {
         viewModelScope.launch {
             _isLoading.value = true
-            // 1. Сначала отменяем в 1С
+            
+            // 1. Отменяем в 1С. 
+            // Предполагается, что на стороне 1С при получении этого запроса товары автоматически возвращаются на склад.
             val isSuccess = repository.cancelOrderIn1C(order)
             
             if (isSuccess) {
-                // 2. Если в 1С успешно, принудительно синхронизируем всё из 1С, 
-                // чтобы получить актуальные статусы и не плодить рандомные ID локально
+                // 2. Вместо локального изменения returnItemsToStock, 
+                // запрашиваем актуальные остатки и статусы из 1С
                 repository.syncOrdersFrom1C(app.currentUserId)
+                repository.syncProducts()
             }
             _isLoading.value = false
         }

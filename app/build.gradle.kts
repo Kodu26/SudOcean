@@ -45,7 +45,6 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     
-    // Retrofit для связи с 1С
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
 
@@ -53,8 +52,10 @@ dependencies {
     implementation("androidx.navigation:navigation-fragment-ktx:2.9.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.9.7")
     
-    // SwipeRefreshLayout для обновления жестом вниз
     implementation(libs.androidx.swiperefreshlayout)
+    
+    // Coil для работы с изображениями (Base64 и URL)
+    implementation(libs.coil)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

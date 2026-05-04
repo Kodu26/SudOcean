@@ -15,10 +15,15 @@
     <color name="ocean_card">#FFFFFF</color>
     <color name="ocean_text_primary">#002147</color>
     <color name="ocean_text_secondary">#455A64</color>
-    <color name="ocean_primary">#005B96</color>
+    <color name="ocean_primary">#084F7C</color> <!-- Обновлен под фон логотипа -->
     <color name="ocean_light">#B3CDE0</color>
 
-    <!-- СТАРЫЕ ЦВЕТА (нужны для обратной совместимости макетов) -->
+    <!-- ЦВЕТА ИЗ НОВОГО ЛОГОТИПА -->
+    <color name="logo_orange">#FF8C00</color>
+    <color name="logo_wave">#63A4FF</color>
+    <color name="logo_anchor_dark">#002147</color>
+
+    <!-- СТАРЫЕ ЦВЕТА -->
     <color name="ocean_deep">#002147</color>
     <color name="sea_foam">#E0F2F1</color>
     <color name="signal_red">#D32F2F</color>

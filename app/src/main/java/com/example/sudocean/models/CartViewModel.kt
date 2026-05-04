@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 data class CartProduct(
+    val cartItemId: Int,
     val product: Product,
     val quantity: Int
 )
@@ -41,7 +42,7 @@ class CartViewModel(application: Application, private val repository: MainReposi
         repository.getCartItems(userId).combine(repository.allProducts) { cartItems, allProducts ->
             cartItems.mapNotNull { cartItem ->
                 val product = allProducts.find { it.id == cartItem.productId }
-                product?.let { CartProduct(it, cartItem.quantity) }
+                product?.let { CartProduct(cartItem.id, it, cartItem.quantity) }
             }
         }
     }
@@ -52,12 +53,13 @@ class CartViewModel(application: Application, private val repository: MainReposi
         products.sumOf { it.product.price * it.quantity }
     }.asLiveData()
 
-    private val _lastOrderId = MutableLiveData<Long?>()
-    val lastOrderId: LiveData<Long?> = _lastOrderId
+    private val _checkoutData = MutableLiveData<Pair<Long, Double>?>()
+    val checkoutData: LiveData<Pair<Long, Double>?> = _checkoutData
 
     fun increaseQuantity(cartProduct: CartProduct) {
         viewModelScope.launch {
             val item = CartItem(
+                id = cartProduct.cartItemId,
                 userId = app.currentUserId,
                 productId = cartProduct.product.id,
                 quantity = cartProduct.quantity + 1
@@ -70,6 +72,7 @@ class CartViewModel(application: Application, private val repository: MainReposi
         viewModelScope.launch {
             if (cartProduct.quantity > 1) {
                 val item = CartItem(
+                    id = cartProduct.cartItemId,
                     userId = app.currentUserId,
                     productId = cartProduct.product.id,
                     quantity = cartProduct.quantity - 1
@@ -77,6 +80,7 @@ class CartViewModel(application: Application, private val repository: MainReposi
                 repository.updateCartQuantity(item)
             } else {
                 val item = CartItem(
+                    id = cartProduct.cartItemId,
                     userId = app.currentUserId,
                     productId = cartProduct.product.id,
                     quantity = cartProduct.quantity
@@ -93,25 +97,17 @@ class CartViewModel(application: Application, private val repository: MainReposi
     }
 
     fun checkout() {
-        viewModelScope.launch {
-            val userId = app.currentUserId
-            val currentAmount = totalAmount.value ?: 0.0
-            
-            if (currentAmount > 0) {
-                val order = Order(
-                    userId = userId,
-                    date = System.currentTimeMillis(),
-                    totalAmount = currentAmount,
-                    status = "В процессе"
-                )
-                val id = repository.insertOrder(order)
-                _lastOrderId.value = id
-            }
+        // Мы НЕ создаем заказ в БД сразу, чтобы избежать "пустых" заказов при нажатии кнопки Назад.
+        // Вместо этого мы просто сигнализируем UI, что пора переходить к оплате.
+        val currentAmount = totalAmount.value ?: 0.0
+        if (currentAmount > 0) {
+            // Передаем -1 как ID, сигнализируя, что заказ еще не создан в базе
+            _checkoutData.value = Pair(-1L, currentAmount)
         }
     }
 
-    fun clearLastOrderId() {
-        _lastOrderId.value = null
+    fun clearCheckoutData() {
+        _checkoutData.value = null
     }
 }
 
