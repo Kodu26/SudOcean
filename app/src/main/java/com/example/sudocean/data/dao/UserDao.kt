@@ -21,6 +21,10 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE remoteId = :login LIMIT 1")
     suspend fun getUserByLogin(login: String): User?
 
+    // Поиск просто по телефону (для проверки уникальности)
+    @Query("SELECT * FROM users WHERE phone = :phone LIMIT 1")
+    suspend fun getUserByPhone(phone: String): User?
+
     @Insert(onConflict = OnConflictStrategy.ABORT) // Используем ABORT, чтобы Room выдавал ошибку при дубликате
     suspend fun register(user: User): Long
 

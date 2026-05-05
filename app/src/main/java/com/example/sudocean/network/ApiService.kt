@@ -63,7 +63,8 @@ data class OrderRequest(
     val user_name: String,
     val phone: String,
     val total_amount: Double,
-    val items: List<OrderItemRequest>
+    val items: List<OrderItemRequest>,
+    val order_number: String? = null // Опциональный номер для Pay Later
 )
 
 data class OrderResponse(
@@ -88,7 +89,7 @@ data class UserRequest(
     val inn: String? = null,
     val kpp: String? = null,
     val legal_address: String? = null,
-    val is_registration: Boolean // Флаг для 1С
+    val is_registration: Boolean
 )
 
 data class RemoteUserResponse(

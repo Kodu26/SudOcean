@@ -141,19 +141,16 @@ class RegFragment : Fragment() {
 
         lifecycleScope.launch {
             try {
-                // 1. Проверка уникальности локально
-                if (viewModel.checkUserExists(remoteIdValue)) {
-                    val label = if (currentUserType == "LEGAL") "ИНН" else "Номер телефона"
-                    Toast.makeText(requireContext(), "$label уже зарегистрирован в приложении", Toast.LENGTH_LONG).show()
-                    return@launch
-                }
-
-                // 2. Попытка регистрации (включает проверку в 1С)
+                // Попытка регистрации. 
+                // Repository.register сначала синхронизирует с 1С. 
+                // Если 1С разрешит (даже если пользователь был помечен на удаление),
+                // локальная база обновится или создастся.
                 viewModel.register(newUser)
+                
                 Toast.makeText(requireContext(), "Регистрация успешна!", Toast.LENGTH_SHORT).show()
                 findNavController().navigateUp()
             } catch (e: Exception) {
-                // Если 1С вернет ошибку "Клиент уже существует", она отобразится здесь
+                // Сюда попадут ошибки от 1С (409 Conflict, 500 и т.д.)
                 val cleanMessage = e.message?.replace("java.lang.Exception:", "") ?: "Ошибка регистрации"
                 Toast.makeText(requireContext(), cleanMessage, Toast.LENGTH_LONG).show()
             }

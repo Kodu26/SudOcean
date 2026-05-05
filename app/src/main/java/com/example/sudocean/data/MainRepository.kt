@@ -75,8 +75,17 @@ class MainRepository(
                         kpp = remoteUser.kpp,
                         legalAddress = remoteUser.legal_address
                     )
-                    val id = userDao.register(newUser)
-                    return@withContext newUser.copy(id = id.toInt())
+                    
+                    // Проверяем наличие "призрака" в Room при входе
+                    val existing = userDao.getUserByLogin(cleanIdentifier)
+                    return@withContext if (existing != null) {
+                        val updated = newUser.copy(id = existing.id)
+                        userDao.updateUser(updated)
+                        updated
+                    } else {
+                        val id = userDao.register(newUser)
+                        newUser.copy(id = id.toInt())
+                    }
                 }
                 null
             } catch (e: Exception) {
@@ -104,9 +113,20 @@ class MainRepository(
     }
 
     suspend fun register(user: User): Long {
+        // 1. Синхронизируем с 1С (она сама решит: создать нового или оживить старого)
         syncUserWith1C(user, isRegistration = true)
-        val id = userDao.register(user)
-        return id
+        
+        // 2. Проверяем локальную базу
+        val existingUser = userDao.getUserByLogin(user.remoteId)
+        return if (existingUser != null) {
+            // Если он есть в Room (например, после удаления в 1С) — обновляем данные
+            val updatedUser = user.copy(id = existingUser.id)
+            userDao.updateUser(updatedUser)
+            existingUser.id.toLong()
+        } else {
+            // Если нет — создаем новую запись
+            userDao.register(user)
+        }
     }
 
     suspend fun updateUser(user: User) {
@@ -331,12 +351,25 @@ class MainRepository(
         } catch (e: Exception) { false }
     }
 
-    suspend fun sendOrderTo1C(user: User, order: Order, cartItems: List<CartItem>, products: List<Product>): OrderResponse? {
+    suspend fun sendOrderTo1C(
+        user: User, 
+        order: Order, 
+        cartItems: List<CartItem>, 
+        products: List<Product>,
+        orderNumber: String? = null
+    ): OrderResponse? {
         val itemsRequest = cartItems.map { cartItem ->
             val p = products.find { it.id == cartItem.productId }
             OrderItemRequest(cartItem.productId.toString(), cartItem.quantity.toDouble(), p?.price ?: 0.0)
         }
-        val request = OrderRequest(getRemoteId(user), user.fullName, user.phone, order.totalAmount, itemsRequest)
+        val request = OrderRequest(
+            user_id = getRemoteId(user),
+            user_name = user.fullName,
+            phone = user.phone,
+            total_amount = order.totalAmount,
+            items = itemsRequest,
+            order_number = orderNumber
+        )
         
         val response = apiService.sendOrder(request)
         

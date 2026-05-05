@@ -83,7 +83,6 @@ class ProfileFragment : Fragment() {
             showDeleteAccountConfirmation()
         }
 
-        // Устанавливаем начальное состояние режима редактирования (ВЫКЛ)
         setEditMode(false)
     }
 
@@ -99,7 +98,6 @@ class ProfileFragment : Fragment() {
                 binding.layoutProfileExpandable.visibility = View.GONE
                 binding.ivProfileArrow.animate().rotation(0f).start()
                 if (isPasswordSectionVisible) togglePasswordSection()
-                // При закрытии профиля всегда выключаем редактирование
                 binding.switchEditMode.isChecked = false
             }
         }
@@ -107,10 +105,8 @@ class ProfileFragment : Fragment() {
         binding.switchEditMode.setOnCheckedChangeListener { _, isChecked ->
             setEditMode(isChecked)
             if (!isChecked) {
-                // Если выключили - возвращаем старые данные
                 currentUser?.let { updateFields(it) }
                 clearErrors()
-                // Скрываем секцию смены пароля, если она была открыта
                 if (isPasswordSectionVisible) {
                     togglePasswordSection()
                 }
@@ -119,22 +115,18 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setEditMode(enabled: Boolean) {
-        // Делаем поля доступными или только для чтения
         binding.tilProfileName.isEnabled = enabled
         binding.tilProfilePhone.isEnabled = enabled
         binding.tilProfileInn.isEnabled = enabled
         binding.tilProfileKpp.isEnabled = enabled
         binding.tilProfileLegalAddress.isEnabled = enabled
 
-        // Показываем/скрываем кнопки действия
         binding.btnSaveProfile.visibility = if (enabled) View.VISIBLE else View.GONE
         binding.btnShowChangePassword.visibility = if (enabled) View.VISIBLE else View.GONE
         binding.btnDeleteAccount.visibility = if (enabled) View.VISIBLE else View.GONE
         
-        // Кнопка выхода видна ВСЕГДА, когда профиль развернут
         binding.btnLogout.visibility = View.VISIBLE
         
-        // Визуальная подсказка: меняем прозрачность полей или цвет карточки
         val alpha = if (enabled) 1.0f else 0.7f
         binding.tilProfileName.alpha = alpha
         binding.tilProfilePhone.alpha = alpha
@@ -142,10 +134,8 @@ class ProfileFragment : Fragment() {
         binding.tilProfileKpp.alpha = alpha
         binding.tilProfileLegalAddress.alpha = alpha
 
-        // Меняем текст переключателя для наглядности
         binding.switchEditMode.text = if (enabled) "Редактирование: ВКЛ" else "Только просмотр"
         
-        // Цвет рамки
         val strokeColor = if (enabled) resources.getColor(R.color.anchor_gold, null) 
                          else resources.getColor(R.color.ocean_primary, null)
         binding.cardProfile.strokeColor = strokeColor
@@ -347,9 +337,12 @@ class ProfileFragment : Fragment() {
                 }
             },
             onPayClick = { order ->
+                // Извлекаем номер заказа из строки статуса: "Статус (№000000001)"
+                val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
                 val bundle = bundleOf(
                     "order_id" to order.id,
-                    "total_amount" to order.totalAmount
+                    "total_amount" to order.totalAmount,
+                    "order_number" to orderNumber
                 )
                 findNavController().navigate(R.id.action_orderFragment_to_paymentFragment, bundle)
             }
