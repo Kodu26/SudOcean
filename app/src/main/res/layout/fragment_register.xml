@@ -87,8 +87,9 @@
                     android:id="@+id/et_inn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
                     android:inputType="number"
-                    android:maxLength="12"
+                    android:maxLength="10"
                     android:textColor="@color/ocean_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -106,6 +107,7 @@
                     android:id="@+id/et_kpp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
                     android:inputType="number"
                     android:maxLength="9"
                     android:textColor="@color/ocean_text_primary" />
@@ -143,6 +145,7 @@
                 android:id="@+id/et_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:importantForAutofill="no"
                 android:inputType="phone"
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -162,6 +165,7 @@
                 android:id="@+id/et_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:importantForAutofill="no"
                 android:inputType="textPassword"
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>

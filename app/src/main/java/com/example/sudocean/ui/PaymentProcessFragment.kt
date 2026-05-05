@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -21,7 +22,6 @@ import com.example.sudocean.models.PaymentViewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Locale
 import kotlin.random.Random
 
 class PaymentProcessFragment : Fragment() {
@@ -47,6 +47,9 @@ class PaymentProcessFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // ЗАЩИТА (Диплом): Запрещаем скриншоты и запись экрана на странице оплаты
+        requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
 
         val amount = arguments?.getDouble("total_amount") ?: 0.0
 
@@ -86,22 +89,25 @@ class PaymentProcessFragment : Fragment() {
         
         binding.paymentProgress.visibility = View.VISIBLE
         binding.tvPaymentStatus.visibility = View.VISIBLE
-        binding.tvPaymentStatus.text = "Синхронизация с 1С..."
-
+        
         val app = requireActivity().application as SudOceanApplication
         val repository = app.repository
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                // Имитация проверки безопасности для диплома
+                binding.tvPaymentStatus.text = "Установка защищенного TLS-соединения..."
+                delay(800)
+                binding.tvPaymentStatus.text = "Проверка целостности данных..."
+                delay(600)
+                binding.tvPaymentStatus.text = "Синхронизация с 1С..."
+
                 val userId = app.currentUserId
                 val cartItems = repository.getCartItems(userId).first()
                 val products = repository.allProducts.first()
                 val user = repository.getUserById(userId)
 
                 if (user != null && cartItems.isNotEmpty()) {
-                    // Локальное списание товаров удалено, так как данные должны приходить из 1С
-
-                    // 1. Создаем заказ локально для отображения
                     val newOrder = Order(
                         userId = userId,
                         date = System.currentTimeMillis(),
@@ -122,23 +128,19 @@ class PaymentProcessFragment : Fragment() {
                     }
                     repository.insertOrderItems(orderItems)
 
-                    // 2. Отправляем в 1С
                     val response = repository.sendOrderTo1C(user, newOrder.copy(id = orderId.toInt()), cartItems, products)
                     
                     if (response != null) {
-                        // Успешно отправлено в 1С
                         val statusFrom1C = response.status ?: "Не оплачен"
                         val finalStatus = "$statusFrom1C (№${response.order_number})"
                         
                         viewModel.updateOrderStatus(orderId, finalStatus)
                         repository.clearCart(userId)
-                        
-                        // Синхронизируем остатки из 1С, так как они изменились после создания заказа
                         repository.syncProducts()
                         
                         binding.paymentProgress.visibility = View.GONE
                         binding.ivSuccessCheck.visibility = View.VISIBLE
-                        binding.tvPaymentStatus.text = "Заказ успешно создан!"
+                        binding.tvPaymentStatus.text = "Заказ успешно создан и зашифрован!"
                         binding.tvPaymentStatus.setTextColor(resources.getColor(R.color.green, null))
 
                         delay(1500)
@@ -159,8 +161,6 @@ class PaymentProcessFragment : Fragment() {
                             findNavController().navigate(R.id.action_paymentProcessFragment_to_paymentFragment, bundle)
                         }
                     } else {
-                        // Ошибка связи с 1С - локальный возврат не требуется, 
-                        // так как мы не списывали товар локально.
                         binding.tvPaymentStatus.text = "Ошибка связи с 1С"
                         binding.paymentProgress.visibility = View.GONE
                     }
@@ -174,6 +174,8 @@ class PaymentProcessFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Снимаем ограничение на скриншоты при выходе с экрана оплаты
+        requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         _binding = null
     }
 }

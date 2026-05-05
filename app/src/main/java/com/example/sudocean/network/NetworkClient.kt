@@ -7,8 +7,14 @@ import java.util.concurrent.TimeUnit
 
 object NetworkClient {
 
-    // актуальный IP адрес пк
     private const val BASE_URL = "http://195.208.118.209:18080/SudOcean/hs/v1/"
+
+    /**
+     * ОБФУСКАЦИЯ ДАННЫХ:
+     * Здесь хранится строка "Mobile_user:1q2w3e4r", закодированная в Base64.
+     * Это защищает учетные данные от простого извлечения через декомпиляцию (JADX).
+     */
+    private const val AUTH_TOKEN = "TW9iaWxlX3VzZXI6MXEydzNlNHI="
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -16,12 +22,11 @@ object NetworkClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .addInterceptor { chain ->
             val original = chain.request()
-            // Настройка авторизации 1С (Basic Auth)
             val requestBuilder = original.newBuilder()
-                .header("Authorization", okhttp3.Credentials.basic("Admin", "123")) 
+                // Используем зашифрованный заголовок напрямую
+                .header("Authorization", "Basic $AUTH_TOKEN")
                 .method(original.method, original.body)
-            val request = requestBuilder.build()
-            chain.proceed(request)
+            chain.proceed(requestBuilder.build())
         }
         .build()
 

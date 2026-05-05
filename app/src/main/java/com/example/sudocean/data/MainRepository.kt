@@ -104,24 +104,15 @@ class MainRepository(
     }
 
     suspend fun register(user: User): Long {
-        // 1. Синхронизируем с 1С (is_registration = true)
         syncUserWith1C(user, isRegistration = true)
-
-        // 2. Если 1С не вернула ошибку, сохраняем локально
         val id = userDao.register(user)
         return id
     }
 
     suspend fun updateUser(user: User) {
-        // 1. Синхронизируем с 1С (is_registration = false)
-        // В 1С передается текущий remoteId для поиска
         syncUserWith1C(user, isRegistration = false)
-        
-        // 2. После успешной синхронизации обновляем remoteId в Room,
-        // так как 1С обновила ID_МобильногоПользователя на основе нового телефона/ИНН
         val cleanPhone = user.phone.replace(Regex("[^\\d]"), "")
         val newRemoteId = if (user.userType == "LEGAL") (user.inn ?: user.remoteId) else cleanPhone
-        
         val updatedUser = user.copy(remoteId = newRemoteId)
         userDao.updateUser(updatedUser)
     }
@@ -246,16 +237,42 @@ class MainRepository(
     suspend fun downloadAndOpenInvoice(context: Context, order: Order) {
         withContext(Dispatchers.IO) {
             try {
+                Log.d("1C_DOWNLOAD", "Starting download for order status: ${order.status}")
                 val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
-                if (orderNumber.isEmpty()) return@withContext
-                val response = apiService.downloadInvoice(orderNumber)
-                if (response.isSuccessful) {
-                    val body = response.body() ?: return@withContext
-                    val fileName = "Invoice_${orderNumber}_${System.currentTimeMillis()}.pdf"
-                    val uri = saveFileToDownloads(context, body, fileName)
-                    if (uri != null) { withContext(Dispatchers.Main) { openPdf(context, uri) } }
+                Log.d("1C_DOWNLOAD", "Extracted order number: '$orderNumber'")
+                
+                if (orderNumber.isEmpty()) {
+                    Log.e("1C_DOWNLOAD", "Order number is empty, cannot download.")
+                    return@withContext
                 }
-            } catch (e: Exception) { Log.e("1C_DEBUG", "Download failed: ${e.message}") }
+                
+                val response = apiService.downloadInvoice(orderNumber)
+                Log.d("1C_DOWNLOAD", "Response code: ${response.code()}")
+                
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body == null) {
+                        Log.e("1C_DOWNLOAD", "Response body is null")
+                        return@withContext
+                    }
+                    
+                    val fileName = "Invoice_${orderNumber}_${System.currentTimeMillis()}.pdf"
+                    Log.d("1C_DOWNLOAD", "Saving file: $fileName")
+                    
+                    val uri = saveFileToDownloads(context, body, fileName)
+                    if (uri != null) { 
+                        Log.d("1C_DOWNLOAD", "File saved successfully at: $uri")
+                        withContext(Dispatchers.Main) { openPdf(context, uri) } 
+                    } else {
+                        Log.e("1C_DOWNLOAD", "Failed to save file to downloads")
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("1C_DOWNLOAD", "Server returned error: $errorBody")
+                }
+            } catch (e: Exception) { 
+                Log.e("1C_DOWNLOAD", "Critical download error: ${e.message}", e)
+            }
         }
     }
 
@@ -270,16 +287,26 @@ class MainRepository(
         }
         return try {
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-            uri?.also {
-                resolver.openOutputStream(it)?.use { outputStream ->
-                    body.byteStream().use { inputStream -> inputStream.copyTo(outputStream) }
+            if (uri == null) {
+                Log.e("1C_DOWNLOAD", "ContentResolver.insert returned null")
+                return null
+            }
+            resolver.openOutputStream(uri)?.use { outputStream ->
+                body.byteStream().use { inputStream -> 
+                    val bytesCopied = inputStream.copyTo(outputStream)
+                    Log.d("1C_DOWNLOAD", "Bytes copied: $bytesCopied")
                 }
             }
-        } catch (e: Exception) { null }
+            uri
+        } catch (e: Exception) { 
+            Log.e("1C_DOWNLOAD", "Error in saveFileToDownloads: ${e.message}")
+            null 
+        }
     }
 
     private fun openPdf(context: Context, uri: Uri) {
         try {
+            Log.d("1C_DOWNLOAD", "Attempting to open PDF: $uri")
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -287,7 +314,10 @@ class MainRepository(
             }
             context.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
+            Log.e("1C_DOWNLOAD", "No PDF viewer found")
             Toast.makeText(context, "Установите PDF-просмотрщик", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Log.e("1C_DOWNLOAD", "Error opening PDF: ${e.message}")
         }
     }
 
@@ -302,14 +332,19 @@ class MainRepository(
     }
 
     suspend fun sendOrderTo1C(user: User, order: Order, cartItems: List<CartItem>, products: List<Product>): OrderResponse? {
-        return try {
-            val itemsRequest = cartItems.map { cartItem ->
-                val p = products.find { it.id == cartItem.productId }
-                OrderItemRequest(cartItem.productId.toString(), cartItem.quantity.toDouble(), p?.price ?: 0.0)
-            }
-            val request = OrderRequest(getRemoteId(user), user.fullName, user.phone, order.totalAmount, itemsRequest)
-            val response = apiService.sendOrder(request)
-            if (response.isSuccessful) response.body() else null
-        } catch (e: Exception) { null }
+        val itemsRequest = cartItems.map { cartItem ->
+            val p = products.find { it.id == cartItem.productId }
+            OrderItemRequest(cartItem.productId.toString(), cartItem.quantity.toDouble(), p?.price ?: 0.0)
+        }
+        val request = OrderRequest(getRemoteId(user), user.fullName, user.phone, order.totalAmount, itemsRequest)
+        
+        val response = apiService.sendOrder(request)
+        
+        if (response.isSuccessful) {
+            return response.body()
+        } else {
+            val errorMsg = response.errorBody()?.string() ?: "Ошибка на стороне 1С"
+            throw Exception(errorMsg)
+        }
     }
 }
