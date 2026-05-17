@@ -29,8 +29,11 @@ import com.example.sudocean.network.PasswordChangeRequest
 import com.example.sudocean.network.UserRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -43,6 +46,7 @@ class MainRepository(
     private val apiService: ApiService
 ) {
     private val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+    private val syncMutex = Mutex()
 
     private fun getRemoteId(user: User): String {
         return user.remoteId.replace(Regex("[^\\d]"), "")
@@ -76,7 +80,6 @@ class MainRepository(
                         legalAddress = remoteUser.legal_address
                     )
                     
-                    // Проверяем наличие "призрака" в Room при входе
                     val existing = userDao.getUserByLogin(cleanIdentifier)
                     return@withContext if (existing != null) {
                         val updated = newUser.copy(id = existing.id)
@@ -113,18 +116,13 @@ class MainRepository(
     }
 
     suspend fun register(user: User): Long {
-        // 1. Синхронизируем с 1С (она сама решит: создать нового или оживить старого)
         syncUserWith1C(user, isRegistration = true)
-        
-        // 2. Проверяем локальную базу
         val existingUser = userDao.getUserByLogin(user.remoteId)
         return if (existingUser != null) {
-            // Если он есть в Room (например, после удаления в 1С) — обновляем данные
             val updatedUser = user.copy(id = existingUser.id)
             userDao.updateUser(updatedUser)
             existingUser.id.toLong()
         } else {
-            // Если нет — создаем новую запись
             userDao.register(user)
         }
     }
@@ -214,8 +212,15 @@ class MainRepository(
                     )
                     productDao.insertProduct(product)
                 }
+            } else {
+                throw Exception("1C_UNAVAILABLE")
             }
-        } catch (e: Exception) { Log.e("1C_SYNC", "Products sync error: ${e.message}") }
+        } catch (e: IOException) {
+            throw Exception("NO_INTERNET")
+        } catch (e: Exception) { 
+            Log.e("1C_SYNC", "Products sync error: ${e.message}")
+            throw Exception("1C_UNAVAILABLE")
+        }
     }
 
     // CART logic
@@ -233,25 +238,49 @@ class MainRepository(
     suspend fun insertOrderItems(items: List<OrderItem>) = orderItemDao.insertOrderItems(items)
 
     suspend fun syncOrdersFrom1C(userId: Int) {
-        try {
-            val user = userDao.getUserByIdDirect(userId) ?: return
-            val remoteUserId = getRemoteId(user)
-            val response = apiService.getUserOrders(remoteUserId)
-            if (response.isSuccessful) {
-                val remoteOrders = response.body()
-                orderDao.deleteUserOrders(userId)
-                remoteOrders?.forEach { remoteOrder ->
-                    val parsedDate = try { isoDateFormat.parse(remoteOrder.date)?.time ?: System.currentTimeMillis() } catch (e: Exception) { System.currentTimeMillis() }
-                    val localId = remoteOrder.remote_id.filter { it.isDigit() }.toIntOrNull() ?: (1000..99999).random()
-                    val localOrder = Order(id = localId, userId = userId, date = parsedDate, totalAmount = remoteOrder.total_amount, status = remoteOrder.status + " (№" + remoteOrder.remote_id + ")")
-                    orderDao.insertOrder(localOrder)
-                    val localItems = remoteOrder.items.map { item ->
-                        OrderItem(orderId = localOrder.id, productId = item.product_id.toIntOrNull() ?: 0, productName = item.product_name, quantity = item.quantity, price = item.price)
+        // Используем Mutex, чтобы избежать параллельной записи и дублирования
+        syncMutex.withLock {
+            try {
+                val user = userDao.getUserByIdDirect(userId) ?: return
+                val remoteUserId = getRemoteId(user)
+                val response = apiService.getUserOrders(remoteUserId)
+                if (response.isSuccessful) {
+                    val remoteOrders = response.body() ?: return
+                    
+                    // Удаляем ВСЕ старые заказы и товары пользователя разом (CASCADE DELETE сработает)
+                    orderDao.deleteUserOrders(userId)
+
+                    remoteOrders.forEach { remoteOrder ->
+                        val parsedDate = try { isoDateFormat.parse(remoteOrder.date)?.time ?: System.currentTimeMillis() } catch (e: Exception) { System.currentTimeMillis() }
+                        
+                        // Генерируем ID на основе номера из 1С, чтобы избежать случайных дублей
+                        val localId = remoteOrder.remote_id.filter { it.isDigit() }.toIntOrNull() ?: (1000..99999).random()
+                        
+                        val localOrder = Order(
+                            id = localId, 
+                            userId = userId, 
+                            date = parsedDate, 
+                            totalAmount = remoteOrder.total_amount, 
+                            status = remoteOrder.status + " (№" + remoteOrder.remote_id + ")"
+                        )
+                        orderDao.insertOrder(localOrder)
+                        
+                        val localItems = remoteOrder.items.map { item ->
+                            OrderItem(
+                                orderId = localId, 
+                                productId = item.product_id.toIntOrNull() ?: 0, 
+                                productName = item.product_name, 
+                                quantity = item.quantity, 
+                                price = item.price
+                            )
+                        }
+                        orderItemDao.insertOrderItems(localItems)
                     }
-                    orderItemDao.insertOrderItems(localItems)
                 }
+            } catch (e: Exception) { 
+                Log.e("1C_DEBUG", "Sync error: ${e.message}") 
             }
-        } catch (e: Exception) { Log.e("1C_DEBUG", "Sync error: ${e.message}") }
+        }
     }
 
     suspend fun downloadAndOpenInvoice(context: Context, order: Order) {
@@ -335,7 +364,7 @@ class MainRepository(
             context.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             Log.e("1C_DOWNLOAD", "No PDF viewer found")
-            Toast.makeText(context, "Установите PDF-просмотрщик", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "PDF-счет не удалось открыть. Установите приложение для просмотра PDF и повторите попытку.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Log.e("1C_DOWNLOAD", "Error opening PDF: ${e.message}")
         }
@@ -371,13 +400,17 @@ class MainRepository(
             order_number = orderNumber
         )
         
-        val response = apiService.sendOrder(request)
-        
-        if (response.isSuccessful) {
-            return response.body()
-        } else {
-            val errorMsg = response.errorBody()?.string() ?: "Ошибка на стороне 1С"
-            throw Exception(errorMsg)
+        return try {
+            val response = apiService.sendOrder(request)
+            if (response.isSuccessful) {
+                response.body()
+            } else {
+                throw Exception("1C_UNAVAILABLE")
+            }
+        } catch (e: IOException) {
+            throw Exception("NO_NETWORK")
+        } catch (e: Exception) {
+            throw e
         }
     }
 }

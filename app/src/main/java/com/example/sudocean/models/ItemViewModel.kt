@@ -59,6 +59,9 @@ class ItemViewModel(application: Application, private val repository: MainReposi
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
+
     init {
         refreshProducts()
     }
@@ -74,9 +77,22 @@ class ItemViewModel(application: Application, private val repository: MainReposi
     fun refreshProducts() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.syncProducts()
-            _isLoading.value = false
+            try {
+                repository.syncProducts()
+            } catch (e: Exception) {
+                when (e.message) {
+                    "NO_INTERNET" -> _errorMessage.value = "Каталог не удалось обновить. Проверьте подключение к Интернету и повторите попытку."
+                    "1C_UNAVAILABLE" -> _errorMessage.value = "Сервис временно недоступен. Повторите операцию позднее."
+                    else -> _errorMessage.value = "Ошибка обновления каталога"
+                }
+            } finally {
+                _isLoading.value = false
+            }
         }
+    }
+
+    fun clearError() {
+        _errorMessage.value = null
     }
 
     fun addToCart(productId: Int) {

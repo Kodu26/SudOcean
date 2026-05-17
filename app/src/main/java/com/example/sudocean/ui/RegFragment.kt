@@ -123,7 +123,10 @@ class RegFragment : Fragment() {
             }
         }
 
-        if (!isValid) return
+        if (!isValid) {
+            Toast.makeText(requireContext(), "Регистрация не завершена. Заполните все обязательные поля и повторите попытку.", Toast.LENGTH_LONG).show()
+            return
+        }
 
         val cleanPhone = phone.replace(Regex("[^\\d]"), "")
         val remoteIdValue = if (currentUserType == "LEGAL") inn else cleanPhone
@@ -141,18 +144,17 @@ class RegFragment : Fragment() {
 
         lifecycleScope.launch {
             try {
-                // Попытка регистрации. 
-                // Repository.register сначала синхронизирует с 1С. 
-                // Если 1С разрешит (даже если пользователь был помечен на удаление),
-                // локальная база обновится или создастся.
                 viewModel.register(newUser)
-                
                 Toast.makeText(requireContext(), "Регистрация успешна!", Toast.LENGTH_SHORT).show()
                 findNavController().navigateUp()
             } catch (e: Exception) {
-                // Сюда попадут ошибки от 1С (409 Conflict, 500 и т.д.)
-                val cleanMessage = e.message?.replace("java.lang.Exception:", "") ?: "Ошибка регистрации"
-                Toast.makeText(requireContext(), cleanMessage, Toast.LENGTH_LONG).show()
+                // Если ошибка сети или 1С
+                val message = if (e.message?.contains("уже зарегистрирован", ignoreCase = true) == true) {
+                    "Пользователь с такими данными уже существует."
+                } else {
+                    "Сервис временно недоступен. Повторите операцию позднее."
+                }
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
         }
     }

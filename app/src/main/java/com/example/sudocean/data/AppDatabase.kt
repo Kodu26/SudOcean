@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [User::class, Product::class, CartItem::class, Order::class, OrderItem::class],
-    version = 8, // Увеличено до 8 для применения индекса уникальности remoteId
+    version = 9, // Увеличено до 9 для добавления Foreign Key CASCADE в OrderItem
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -15,7 +15,9 @@ interface OrderItemDao {
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     fun getOrderItems(orderId: Int): Flow<List<OrderItem>>
 
-    // Удаление товаров конкретного заказа
     @Query("DELETE FROM order_items WHERE orderId = :orderId")
     suspend fun deleteOrderItems(orderId: Int)
+
+    @Query("DELETE FROM order_items WHERE orderId IN (SELECT id FROM orders WHERE userId = :userId)")
+    suspend fun deleteOrderItemsForUser(userId: Int)
 }

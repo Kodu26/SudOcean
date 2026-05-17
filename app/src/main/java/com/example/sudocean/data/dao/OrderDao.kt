@@ -25,7 +25,13 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE id = :orderId")
     suspend fun getOrderById(orderId: Int): Order?
 
-    // Удаление всех заказов пользователя для синхронизации
     @Query("DELETE FROM orders WHERE userId = :userId")
     suspend fun deleteUserOrders(userId: Int)
+
+    // Метод для полной очистки заказов и товаров пользователя перед синхронизацией
+    @Transaction
+    suspend fun clearAllUserOrderData(userId: Int, orderItemDao: OrderItemDao) {
+        orderItemDao.deleteOrderItemsForUser(userId)
+        deleteUserOrders(userId)
+    }
 }

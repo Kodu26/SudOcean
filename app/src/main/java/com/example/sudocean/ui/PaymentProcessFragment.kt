@@ -48,7 +48,7 @@ class PaymentProcessFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ЗАЩИТА (Диплом): Запрещаем скриншоты и запись экрана на странице оплаты
+        // ЗАЩИТА: Запрещаем скриншоты на странице оплаты
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
 
         val amount = arguments?.getDouble("total_amount") ?: 0.0
@@ -60,7 +60,7 @@ class PaymentProcessFragment : Fragment() {
             if (enteredValue == generatedCode) {
                 processOrder(amount)
             } else {
-                Toast.makeText(requireContext(), "Неверный код подтверждения", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Оплата не завершена. Повторите оплату или проверьте данные заказа.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -95,7 +95,6 @@ class PaymentProcessFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                // Имитация проверки безопасности для диплома
                 binding.tvPaymentStatus.text = "Установка защищенного TLS-соединения..."
                 delay(800)
                 binding.tvPaymentStatus.text = "Проверка целостности данных..."
@@ -140,7 +139,7 @@ class PaymentProcessFragment : Fragment() {
                         
                         binding.paymentProgress.visibility = View.GONE
                         binding.ivSuccessCheck.visibility = View.VISIBLE
-                        binding.tvPaymentStatus.text = "Заказ успешно создан и зашифрован!"
+                        binding.tvPaymentStatus.text = "Заказ успешно создан!"
                         binding.tvPaymentStatus.setTextColor(resources.getColor(R.color.green, null))
 
                         delay(1500)
@@ -161,20 +160,24 @@ class PaymentProcessFragment : Fragment() {
                             findNavController().navigate(R.id.action_paymentProcessFragment_to_paymentFragment, bundle)
                         }
                     } else {
-                        binding.tvPaymentStatus.text = "Ошибка связи с 1С"
-                        binding.paymentProgress.visibility = View.GONE
+                        throw Exception("1C_UNAVAILABLE")
                     }
                 }
             } catch (e: Exception) {
-                binding.tvPaymentStatus.text = "Ошибка: ${e.message}"
                 binding.paymentProgress.visibility = View.GONE
+                val message = when (e.message) {
+                    "NO_NETWORK" -> "Заказ не отправлен. Проверьте подключение к сети и повторите оформление."
+                    "1C_UNAVAILABLE" -> "Сервис временно недоступен. Повторите операцию позднее."
+                    else -> "Оплата не завершена. Повторите оплату или проверьте данные заказа."
+                }
+                binding.tvPaymentStatus.text = message
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
             }
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Снимаем ограничение на скриншоты при выходе с экрана оплаты
         requireActivity().window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         _binding = null
     }

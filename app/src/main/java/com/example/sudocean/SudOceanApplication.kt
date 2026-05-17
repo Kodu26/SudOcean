@@ -19,7 +19,7 @@ class SudOceanApplication : Application() {
     // Инициализируем репозиторий, передавая в него все DAO и Сеть
     val repository by lazy { 
         MainRepository(
-            database.userDao(), 
+            database.userDao(),
             database.productDao(), 
             database.cartDao(), 
             database.orderDao(),
