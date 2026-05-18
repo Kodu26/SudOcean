@@ -1,6 +1,7 @@
 package com.example.sudocean.models
 
 import android.app.Application
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -57,6 +58,10 @@ class CartViewModel(application: Application, private val repository: MainReposi
     val checkoutData: LiveData<Pair<Long, Double>?> = _checkoutData
 
     fun increaseQuantity(cartProduct: CartProduct) {
+        if (cartProduct.quantity >= cartProduct.product.stock) {
+            Toast.makeText(getApplication(), "Максимальное количество достигнуто", Toast.LENGTH_SHORT).show()
+            return
+        }
         viewModelScope.launch {
             val item = CartItem(
                 id = cartProduct.cartItemId,
@@ -97,11 +102,8 @@ class CartViewModel(application: Application, private val repository: MainReposi
     }
 
     fun checkout() {
-        // Мы НЕ создаем заказ в БД сразу, чтобы избежать "пустых" заказов при нажатии кнопки Назад.
-        // Вместо этого мы просто сигнализируем UI, что пора переходить к оплате.
         val currentAmount = totalAmount.value ?: 0.0
         if (currentAmount > 0) {
-            // Передаем -1 как ID, сигнализируя, что заказ еще не создан в базе
             _checkoutData.value = Pair(-1L, currentAmount)
         }
     }

@@ -36,6 +36,11 @@ class CartAdapter(
             binding.tvCartItemPrice.text = String.format(Locale.getDefault(), "%.2f ₽", cartProduct.product.price)
             binding.tvCartItemQuantity.text = cartProduct.quantity.toString()
 
+            // Ограничение по остатку
+            val canIncrease = cartProduct.quantity < cartProduct.product.stock
+            binding.btnPlus.isEnabled = canIncrease
+            binding.btnPlus.alpha = if (canIncrease) 1.0f else 0.5f
+
             binding.btnPlus.setOnClickListener { onPlusClick(cartProduct) }
             binding.btnMinus.setOnClickListener { onMinusClick(cartProduct) }
         }

@@ -225,8 +225,21 @@ class MainRepository(
 
     // CART logic
     fun getCartItems(userId: Int): Flow<List<CartItem>> = cartDao.getCartItems(userId)
-    suspend fun addToCart(cartItem: CartItem) = cartDao.addToCart(cartItem)
-    suspend fun updateCartQuantity(cartItem: CartItem) = cartDao.updateQuantity(cartItem)
+    
+    suspend fun addToCart(cartItem: CartItem) {
+        val product = productDao.getProductById(cartItem.productId)
+        if (product != null && cartItem.quantity <= product.stock) {
+            cartDao.addToCart(cartItem)
+        }
+    }
+
+    suspend fun updateCartQuantity(cartItem: CartItem) {
+        val product = productDao.getProductById(cartItem.productId)
+        if (product != null && cartItem.quantity <= product.stock) {
+            cartDao.updateQuantity(cartItem)
+        }
+    }
+
     suspend fun deleteFromCart(cartItem: CartItem) = cartDao.deleteFromCart(cartItem)
     suspend fun clearCart(userId: Int) = cartDao.clearCart(userId)
 

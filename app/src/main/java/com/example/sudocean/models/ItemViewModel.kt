@@ -97,14 +97,23 @@ class ItemViewModel(application: Application, private val repository: MainReposi
 
     fun addToCart(productId: Int) {
         viewModelScope.launch {
+            val product = repository.getProductById(productId) ?: return@launch
             val userId = app.currentUserId
             val existingItem = repository.getCartItems(userId).first().find { it.productId == productId }
             
             if (existingItem != null) {
-                existingItem.quantity += 1
-                repository.updateCartQuantity(existingItem)
+                if (existingItem.quantity < product.stock) {
+                    existingItem.quantity += 1
+                    repository.updateCartQuantity(existingItem)
+                } else {
+                    _errorMessage.value = "Максимальное количество достигнуто"
+                }
             } else {
-                repository.addToCart(CartItem(userId = userId, productId = productId, quantity = 1))
+                if (product.stock > 0) {
+                    repository.addToCart(CartItem(userId = userId, productId = productId, quantity = 1))
+                } else {
+                    _errorMessage.value = "Товара нет в наличии"
+                }
             }
         }
     }

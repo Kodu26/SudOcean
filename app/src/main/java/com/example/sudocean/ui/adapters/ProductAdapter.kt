@@ -52,7 +52,9 @@ class ProductAdapter(
                 binding.tvStockStatus.text = "В наличии: ${product.stock} шт."
                 binding.tvStockStatus.setTextColor(binding.root.context.getColor(R.color.green))
                 binding.btnAddFirst.isEnabled = true
-                binding.btnPlus.isEnabled = true
+                // Блокируем плюс, если в корзине уже максимум
+                binding.btnPlus.isEnabled = quantity < product.stock
+                binding.btnPlus.alpha = if (quantity < product.stock) 1.0f else 0.5f
             } else {
                 binding.tvStockStatus.text = "Нет в наличии"
                 binding.tvStockStatus.setTextColor(binding.root.context.getColor(R.color.signal_red))
