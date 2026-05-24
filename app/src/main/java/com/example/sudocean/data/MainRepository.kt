@@ -77,7 +77,8 @@ class MainRepository(
                         password = password,
                         inn = remoteUser.inn,
                         kpp = remoteUser.kpp,
-                        legalAddress = remoteUser.legal_address
+                        legalAddress = remoteUser.legal_address,
+                        legalForm = remoteUser.form
                     )
                     
                     val existing = userDao.getUserByLogin(cleanIdentifier)
@@ -176,6 +177,7 @@ class MainRepository(
                 inn = user.inn,
                 kpp = user.kpp,
                 legal_address = user.legalAddress,
+                form = user.legalForm,
                 is_registration = isRegistration
             )
             val response = apiService.syncUser(request)

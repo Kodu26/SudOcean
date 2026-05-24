@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [User::class, Product::class, CartItem::class, Order::class, OrderItem::class],
-    version = 9, // Увеличено до 9 для добавления Foreign Key CASCADE в OrderItem
+    version = 10, // Увеличено до 10 для добавления поля legalForm в User
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

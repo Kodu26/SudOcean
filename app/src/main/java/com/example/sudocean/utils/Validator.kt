@@ -6,11 +6,32 @@ object Validator {
         return digits.length == 11
     }
 
-    fun isValidInn(inn: String, userType: String): Boolean {
-        return when (userType) {
-            "LEGAL" -> inn.length == 10 && inn.all { it.isDigit() }
-            "PHYSICAL" -> inn.length == 12 && inn.all { it.isDigit() }
-            else -> false
+    /**
+     * Валидация ИНН.
+     * @param inn Строка ИНН
+     * @param context "LOGIN" или "REGISTER"
+     * @param userType "PHYSICAL" (Обычный) или "LEGAL" (Бизнес)
+     * @param legalForm Форма (для регистрации), например "ИП"
+     */
+    fun isValidInn(inn: String, userType: String, context: String = "REGISTER", legalForm: String? = null): Boolean {
+        if (!inn.all { it.isDigit() }) return false
+        
+        return if (context == "LOGIN") {
+            if (userType == "LEGAL") {
+                // Для входа бизнес-пользователя: 10 (организация) или 12 (ИП) цифр
+                inn.length == 10 || inn.length == 12
+            } else {
+                // Обычный пользователь входит по телефону, ИНН не проверяем здесь
+                true
+            }
+        } else {
+            // Для регистрации
+            if (userType == "LEGAL") {
+                if (legalForm == "ИП") inn.length == 12 else inn.length == 10
+            } else {
+                // Обычному пользователю ИНН не обязателен, но если есть - 12 цифр
+                inn.isEmpty() || inn.length == 12
+            }
         }
     }
 
@@ -19,6 +40,6 @@ object Validator {
     }
 
     fun isValidPassword(password: String): Boolean {
-        return password.length >= 4
+        return password.length >= 6
     }
 }

@@ -17,5 +17,6 @@ data class User(
     val password: String,
     val inn: String? = null,
     val kpp: String? = null,
-    val legalAddress: String? = null
+    val legalAddress: String? = null,
+    val legalForm: String? = null // Новое поле: ООО, ИП и т.д.
 )

@@ -1,7 +1,5 @@
 package com.example.sudocean.ui
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
@@ -44,30 +42,27 @@ class LoginFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Инициализируем состояние при каждом создании вью
         resetToDefaultState()
-        
         setupListeners()
     }
 
     private fun resetToDefaultState() {
         currentLoginType = "PHYSICAL"
-        binding.toggleLoginType.check(R.id.btn_login_physical)
-        updateInputType(true)
+        updateUIForType()
         clearErrors()
         binding.etLoginIdentifier.text?.clear()
         binding.etLoginPassword.text?.clear()
     }
 
     private fun setupListeners() {
-        binding.toggleLoginType.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                clearErrors()
-                binding.etLoginIdentifier.text?.clear()
-                currentLoginType = if (checkedId == R.id.btn_login_physical) "PHYSICAL" else "LEGAL"
-                updateInputType(currentLoginType == "PHYSICAL")
+        binding.btnSwitchToBusiness.setOnClickListener {
+            if (currentLoginType == "PHYSICAL") {
+                currentLoginType = "LEGAL"
+            } else {
+                currentLoginType = "PHYSICAL"
             }
+            updateUIForType()
+            clearErrors()
         }
 
         binding.LoginButton.setOnClickListener {
@@ -83,28 +78,31 @@ class LoginFragment : Fragment() {
         }
     }
 
-    private fun updateInputType(isPhone: Boolean) {
-        if (isPhone) {
-            binding.tilLoginIdentifier.hint = "Номер телефона"
+    private fun updateUIForType() {
+        val isBusiness = currentLoginType == "LEGAL"
+        if (isBusiness) {
+            binding.tvLoginTitle.text = getString(R.string.user_type_business)
+            binding.btnSwitchToBusiness.text = getString(R.string.btn_for_regular)
+            binding.tilLoginIdentifier.hint = "ИНН"
+            binding.etLoginIdentifier.inputType = InputType.TYPE_CLASS_NUMBER
+            binding.etLoginIdentifier.filters = arrayOf(InputFilter.LengthFilter(12))
+            applyPhoneMask(false)
+        } else {
+            binding.tvLoginTitle.text = getString(R.string.user_type_regular)
+            binding.btnSwitchToBusiness.text = getString(R.string.btn_for_business)
+            binding.tilLoginIdentifier.hint = getString(R.string.hint_phone)
             binding.etLoginIdentifier.inputType = InputType.TYPE_CLASS_PHONE
             binding.etLoginIdentifier.filters = arrayOf()
             applyPhoneMask(true)
-        } else {
-            binding.tilLoginIdentifier.hint = "ИНН"
-            binding.etLoginIdentifier.inputType = InputType.TYPE_CLASS_NUMBER
-            binding.etLoginIdentifier.filters = arrayOf(InputFilter.LengthFilter(10))
-            applyPhoneMask(false)
         }
     }
 
     private fun applyPhoneMask(enabled: Boolean) {
-        // Удаляем старый экземпляр, если он был
         phoneMaskWatcher?.let {
             binding.etLoginIdentifier.removeTextChangedListener(it)
         }
         
         if (enabled) {
-            // Создаем маску заново для нового EditText
             phoneMaskWatcher = PhoneMaskWatcher(binding.etLoginIdentifier)
             binding.etLoginIdentifier.addTextChangedListener(phoneMaskWatcher)
         } else {
@@ -130,8 +128,8 @@ class LoginFragment : Fragment() {
                 isValid = false
             }
         } else {
-            if (!Validator.isValidInn(identifier, "LEGAL")) {
-                binding.tilLoginIdentifier.error = "ИНН должен содержать 10 цифр"
+            if (!Validator.isValidInn(identifier, "LEGAL", context = "LOGIN")) {
+                binding.tilLoginIdentifier.error = getString(R.string.error_inn_business)
                 isValid = false
             }
         }

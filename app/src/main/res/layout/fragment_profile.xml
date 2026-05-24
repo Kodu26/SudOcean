@@ -62,7 +62,8 @@
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:src="@android:drawable/ic_menu_more"
-                            app:tint="@color/ocean_primary" />
+                            app:tint="@color/ocean_primary"
+                            android:contentDescription="Развернуть профиль" />
                     </RelativeLayout>
 
                     <!-- Выезжающая часть профиля -->
@@ -79,7 +80,7 @@
                             android:id="@+id/switch_edit_mode"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Режим редактирования"
+                            android:text="Только просмотр"
                             android:textColor="@color/ocean_text_secondary"
                             android:layout_marginBottom="16dp"
                             app:thumbTint="@color/anchor_gold"
@@ -106,7 +107,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:hint="Телефон"
+                            android:hint="@string/hint_phone"
                             app:boxStrokeColor="@color/ocean_primary"
                             app:errorEnabled="true">
                             <com.google.android.material.textfield.TextInputEditText
@@ -127,6 +128,23 @@
                             tools:visibility="visible">
 
                             <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/til_profile_legal_form"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="@string/hint_legal_form"
+                                app:boxStrokeColor="@color/ocean_primary"
+                                app:errorEnabled="true">
+                                <AutoCompleteTextView
+                                    android:id="@+id/actv_profile_legal_form"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    tools:ignore="LabelFor" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
                                 android:id="@+id/til_profile_inn"
                                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                                 android:layout_width="match_parent"
@@ -141,7 +159,6 @@
                                     android:layout_height="wrap_content"
                                     android:importantForAutofill="no"
                                     android:inputType="number"
-                                    android:maxLength="10"
                                     android:textColor="@color/ocean_text_primary" />
                             </com.google.android.material.textfield.TextInputLayout>
 
@@ -247,7 +264,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:hint="Повторите новый пароль"
+                                android:hint="Подтвердите пароль"
                                 app:passwordToggleEnabled="true"
                                 app:errorEnabled="true">
                                 <com.google.android.material.textfield.TextInputEditText
@@ -262,54 +279,46 @@
                                 android:id="@+id/btn_confirm_password_change"
                                 android:layout_width="match_parent"
                                 android:layout_height="50dp"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="12dp"
                                 android:text="Подтвердить смену"
-                                app:cornerRadius="8dp" />
+                                app:cornerRadius="10dp" />
                         </LinearLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_logout"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:layout_marginTop="16dp"
-                            android:text="@string/logout"
-                            android:textColor="@color/signal_red" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_delete_account"
                             style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="8dp"
                             android:text="Удалить аккаунт"
-                            android:textColor="@color/signal_red"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                            android:textColor="@color/signal_red" />
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_logout"
+                            android:layout_width="match_parent"
+                            android:layout_height="60dp"
+                            android:layout_marginTop="24dp"
+                            android:text="Выйти из системы"
+                            android:textColor="@color/white"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/signal_red"
+                            app:cornerRadius="12dp" />
+
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:id="@+id/ll_history_header"
+            <TextView
+                android:id="@+id/tv_orders_header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:layout_marginTop="24dp"
+                android:text="История заказов"
+                android:textColor="@color/ocean_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/card_profile">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="История заказов"
-                    android:textColor="@color/ocean_text_primary"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                app:layout_constraintTop_toBottomOf="@id/card_profile" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_orders"
@@ -318,8 +327,7 @@
                 android:layout_marginTop="12dp"
                 android:nestedScrollingEnabled="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                app:layout_constraintTop_toBottomOf="@id/ll_history_header"
-                tools:itemCount="3"
+                app:layout_constraintTop_toBottomOf="@id/tv_orders_header"
                 tools:listitem="@layout/item_order" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

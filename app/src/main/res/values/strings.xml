@@ -16,4 +16,40 @@
     <string name="cart_empty">Ваша корзина пуста</string>
     <string name="logout">Выйти из аккаунта</string>
     <string name="your_cart">Ваша корзина</string>
+
+    <string name="user_type_regular">Обычный пользователь</string>
+    <string name="user_type_business">Бизнес пользователь</string>
+    <string name="btn_for_business">Для бизнеса</string>
+    <string name="btn_for_regular">Для обычных пользователей</string>
+    <string name="hint_legal_form">Организационно-правовая форма</string>
+    <string name="error_inn_business">Введите корректный ИНН: 10 цифр для организации или 12 цифр для ИП.</string>
+    <string name="error_inn_ip">Для ИП ИНН должен содержать 12 цифр</string>
+    <string name="error_inn_org">Для организации ИНН должен содержать 10 цифр</string>
+    <string name="error_select_form">Выберите организационно-правовую форму</string>
+    <string name="error_fill_kpp">Заполните КПП (9 цифр)</string>
+    <string name="error_fill_address">Заполните юридический адрес</string>
+
+    <!-- Профиль -->
+    <string name="profile_edit_actions">Доступные действия</string>
+    <string name="profile_view_only">Только просмотр</string>
+    <string name="btn_change_password">Изменить пароль</string>
+    <string name="btn_hide_password_change">Скрыть смену пароля</string>
+    <string name="btn_delete_account">Удалить аккаунт</string>
+    <string name="btn_save_password">Сохранить пароль</string>
+
+    <string name="error_fill_all_password_fields">Заполните все поля для смены пароля.</string>
+    <string name="error_passwords_dont_match">Новый пароль и повтор пароля не совпадают.</string>
+    <string name="error_password_too_short">Пароль должен содержать не менее 6 символов.</string>
+    <string name="success_password_changed">Пароль успешно изменен.</string>
+    <string name="error_wrong_current_password">Текущий пароль указан неверно.</string>
+    <string name="error_no_internet_password">Не удалось изменить пароль. Проверьте подключение к Интернету.</string>
+    <string name="error_service_unavailable">Сервис временно недоступен. Повторите попытку позднее.</string>
+
+    <string name="delete_account_confirm_title">Удаление аккаунта</string>
+    <string name="delete_account_confirm_message">Вы действительно хотите удалить аккаунт? Это действие нельзя отменить.</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="btn_delete">Удалить</string>
+    <string name="success_account_deleted">Аккаунт удален.</string>
+    <string name="error_delete_failed">Не удалось удалить аккаунт. Повторите попытку позднее.</string>
+    <string name="error_no_internet_delete">Не удалось удалить аккаунт. Проверьте подключение к Интернету.</string>
 </resources>

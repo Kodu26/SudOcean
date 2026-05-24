@@ -1,5 +1,6 @@
 package com.example.sudocean.network
 
+import com.google.gson.annotations.SerializedName
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -89,6 +90,7 @@ data class UserRequest(
     val inn: String? = null,
     val kpp: String? = null,
     val legal_address: String? = null,
+    @SerializedName("форма") val form: String? = null, // Передаем как "форма" для 1С
     val is_registration: Boolean
 )
 
@@ -98,7 +100,8 @@ data class RemoteUserResponse(
     val user_type: String,
     val inn: String? = null,
     val kpp: String? = null,
-    val legal_address: String? = null
+    val legal_address: String? = null,
+    @SerializedName("форма") val form: String? = null
 )
 
 data class RemoteOrderResponse(

@@ -23,30 +23,15 @@
             android:textSize="28sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/toggle_user_type"
+        <TextView
+            android:id="@+id/tv_reg_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="24dp"
-            app:checkedButton="@id/btn_type_physical"
-            app:selectionRequired="true"
-            app:singleSelection="true">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_type_physical"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Физ. лицо" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_type_legal"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Юр. лицо" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+            android:layout_marginTop="8dp"
+            android:text="Обычный пользователь"
+            android:textColor="@color/ocean_text_secondary"
+            android:textSize="16sp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_name"
@@ -74,11 +59,28 @@
             tools:visibility="visible">
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_legal_form"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Организационно-правовая форма"
+                app:boxStrokeColor="@color/ocean_primary"
+                app:errorEnabled="true">
+
+                <AutoCompleteTextView
+                    android:id="@+id/actv_legal_form"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_inn"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:hint="ИНН"
                 app:boxStrokeColor="@color/ocean_primary"
                 app:errorEnabled="true">
@@ -87,9 +89,7 @@
                     android:id="@+id/et_inn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:importantForAutofill="no"
                     android:inputType="number"
-                    android:maxLength="10"
                     android:textColor="@color/ocean_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -98,7 +98,7 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:hint="КПП"
                 app:boxStrokeColor="@color/ocean_primary"
                 app:errorEnabled="true">
@@ -107,9 +107,7 @@
                     android:id="@+id/et_kpp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:importantForAutofill="no"
                     android:inputType="number"
-                    android:maxLength="9"
                     android:textColor="@color/ocean_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -118,7 +116,7 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:hint="Юридический адрес"
                 app:boxStrokeColor="@color/ocean_primary"
                 app:errorEnabled="true">
@@ -136,7 +134,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:hint="Номер телефона"
             app:boxStrokeColor="@color/ocean_primary"
             app:errorEnabled="true">
@@ -145,7 +143,6 @@
                 android:id="@+id/et_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:importantForAutofill="no"
                 android:inputType="phone"
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -155,17 +152,16 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:hint="Пароль"
             app:boxStrokeColor="@color/ocean_primary"
-            app:errorEnabled="true"
-            app:passwordToggleEnabled="true">
+            app:passwordToggleEnabled="true"
+            app:errorEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:importantForAutofill="no"
                 android:inputType="textPassword"
                 android:textColor="@color/ocean_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -174,11 +170,22 @@
             android:id="@+id/register_button"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="32dp"
             android:text="Создать аккаунт"
             android:textSize="16sp"
             android:textStyle="bold"
             app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_switch_to_business"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:text="Для бизнеса"
+            android:textSize="16sp"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/ocean_primary" />
 
         <TextView
             android:id="@+id/back_to_login"

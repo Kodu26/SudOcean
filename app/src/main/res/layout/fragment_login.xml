@@ -23,31 +23,15 @@
             android:textSize="36sp"
             android:textStyle="bold" />
 
-        <!-- Переключатель типа входа -->
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/toggle_login_type"
+        <TextView
+            android:id="@+id/tv_login_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="32dp"
-            app:checkedButton="@id/btn_login_physical"
-            app:selectionRequired="true"
-            app:singleSelection="true">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_login_physical"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Физ. лицо" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_login_legal"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Юр. лицо" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+            android:layout_marginTop="8dp"
+            android:text="Обычный пользователь"
+            android:textColor="@color/ocean_text_secondary"
+            android:textSize="16sp" />
 
         <!-- Поле ввода (Телефон или ИНН) -->
         <com.google.android.material.textfield.TextInputLayout
@@ -55,7 +39,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="32dp"
             android:hint="Номер телефона"
             app:boxStrokeColor="@color/ocean_primary"
             app:errorEnabled="true">
@@ -110,6 +94,17 @@
             android:textSize="18sp"
             android:textStyle="bold"
             app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_switch_to_business"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:text="Для бизнеса"
+            android:textSize="16sp"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/ocean_primary" />
 
         <TextView
             android:id="@+id/go_to_register"

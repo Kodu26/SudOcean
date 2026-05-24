@@ -1,10 +1,12 @@
 package com.example.sudocean.ui
 
 import android.os.Bundle
+import android.text.InputFilter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -38,6 +40,7 @@ class ProfileFragment : Fragment() {
     private var currentUser: User? = null
     private var isProfileExpanded = false
     private var isPasswordSectionVisible = false
+    private val legalForms = listOf("ООО", "НАО", "ЗАО", "ПАО", "АО", "ПК", "ИП")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,9 +62,8 @@ class ProfileFragment : Fragment() {
         }
         binding.swipeRefresh.setColorSchemeResources(R.color.ocean_primary, R.color.anchor_gold)
 
-        binding.btnSaveProfile.setOnClickListener {
-            saveProfileChanges()
-        }
+        // Кнопка сохранения профиля больше не используется для общих данных
+        binding.btnSaveProfile.visibility = View.GONE
 
         binding.btnLogout.setOnClickListener {
             val app = requireActivity().application as SudOceanApplication
@@ -79,7 +81,6 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnDeleteAccount.setOnClickListener {
-            Log.d("1C_DEBUG", "Delete account button clicked")
             showDeleteAccountConfirmation()
         }
 
@@ -87,7 +88,22 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupUI() {
-        binding.etProfilePhone.addTextChangedListener(PhoneMaskWatcher(binding.etProfilePhone))
+        // Поля включены (чтобы не были серыми), но не принимают фокус (нельзя печатать)
+        val fields = listOf(
+            binding.etProfilePhone, 
+            binding.etProfileName, 
+            binding.actvProfileLegalForm, 
+            binding.etProfileInn, 
+            binding.etProfileKpp, 
+            binding.etProfileLegalAddress
+        )
+        
+        fields.forEach { et ->
+            et.isEnabled = true
+            et.isFocusable = false
+            et.isFocusableInTouchMode = false
+            et.isCursorVisible = false
+        }
 
         binding.btnToggleProfile.setOnClickListener {
             isProfileExpanded = !isProfileExpanded
@@ -105,8 +121,6 @@ class ProfileFragment : Fragment() {
         binding.switchEditMode.setOnCheckedChangeListener { _, isChecked ->
             setEditMode(isChecked)
             if (!isChecked) {
-                currentUser?.let { updateFields(it) }
-                clearErrors()
                 if (isPasswordSectionVisible) {
                     togglePasswordSection()
                 }
@@ -115,26 +129,31 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setEditMode(enabled: Boolean) {
-        binding.tilProfileName.isEnabled = enabled
-        binding.tilProfilePhone.isEnabled = enabled
-        binding.tilProfileInn.isEnabled = enabled
-        binding.tilProfileKpp.isEnabled = enabled
-        binding.tilProfileLegalAddress.isEnabled = enabled
+        // Профильные данные ВСЕГДА включены визуально, но выключены функционально
+        val layouts = listOf(
+            binding.tilProfileName,
+            binding.tilProfilePhone,
+            binding.tilProfileLegalForm,
+            binding.tilProfileInn,
+            binding.tilProfileKpp,
+            binding.tilProfileLegalAddress
+        )
 
-        binding.btnSaveProfile.visibility = if (enabled) View.VISIBLE else View.GONE
+        layouts.forEach { til ->
+            til.isEnabled = true // Текст будет белым/черным (обычным)
+            til.alpha = 1.0f     // Убираем прозрачность
+        }
+
+        // Кнопка общего сохранения скрыта навсегда
+        binding.btnSaveProfile.visibility = View.GONE
+        
+        // Кнопки действий видны только при включенном переключателе
         binding.btnShowChangePassword.visibility = if (enabled) View.VISIBLE else View.GONE
         binding.btnDeleteAccount.visibility = if (enabled) View.VISIBLE else View.GONE
         
         binding.btnLogout.visibility = View.VISIBLE
-        
-        val alpha = if (enabled) 1.0f else 0.7f
-        binding.tilProfileName.alpha = alpha
-        binding.tilProfilePhone.alpha = alpha
-        binding.tilProfileInn.alpha = alpha
-        binding.tilProfileKpp.alpha = alpha
-        binding.tilProfileLegalAddress.alpha = alpha
 
-        binding.switchEditMode.text = if (enabled) "Редактирование: ВКЛ" else "Только просмотр"
+        binding.switchEditMode.text = if (enabled) getString(R.string.profile_edit_actions) else getString(R.string.profile_view_only)
         
         val strokeColor = if (enabled) resources.getColor(R.color.anchor_gold, null) 
                          else resources.getColor(R.color.ocean_primary, null)
@@ -147,11 +166,23 @@ class ProfileFragment : Fragment() {
         
         if (user.userType == "LEGAL") {
             binding.layoutProfileLegal.visibility = View.VISIBLE
+            binding.actvProfileLegalForm.setText(user.legalForm, false)
             binding.etProfileInn.setText(user.inn)
             binding.etProfileKpp.setText(user.kpp)
             binding.etProfileLegalAddress.setText(user.legalAddress)
+            updateFieldsVisibility(user.legalForm ?: "")
         } else {
             binding.layoutProfileLegal.visibility = View.GONE
+        }
+    }
+
+    private fun updateFieldsVisibility(form: String) {
+        if (form == "ИП") {
+            binding.tilProfileKpp.visibility = View.GONE
+            binding.tilProfileLegalAddress.visibility = View.GONE
+        } else {
+            binding.tilProfileKpp.visibility = View.VISIBLE
+            binding.tilProfileLegalAddress.visibility = View.VISIBLE
         }
     }
 
@@ -159,9 +190,7 @@ class ProfileFragment : Fragment() {
         viewModel.currentUser.observe(viewLifecycleOwner) { user ->
             user?.let {
                 currentUser = it
-                if (!binding.switchEditMode.isChecked) {
-                    updateFields(it)
-                }
+                updateFields(it)
             }
         }
 
@@ -177,7 +206,7 @@ class ProfileFragment : Fragment() {
     private fun togglePasswordSection() {
         isPasswordSectionVisible = !isPasswordSectionVisible
         binding.layoutChangePassword.visibility = if (isPasswordSectionVisible) View.VISIBLE else View.GONE
-        binding.btnShowChangePassword.text = if (isPasswordSectionVisible) "Отмена" else "Сменить пароль"
+        binding.btnShowChangePassword.text = if (isPasswordSectionVisible) getString(R.string.btn_hide_password_change) else getString(R.string.btn_change_password)
         if (!isPasswordSectionVisible) clearPasswordFields()
     }
 
@@ -200,18 +229,23 @@ class ProfileFragment : Fragment() {
         binding.tilNewPassword.error = null
         binding.tilConfirmPassword.error = null
 
+        if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
+            Toast.makeText(requireContext(), getString(R.string.error_fill_all_password_fields), Toast.LENGTH_SHORT).show()
+            return
+        }
+
         var isValid = true
 
         if (oldPass != user.password.trim()) {
-            binding.tilOldPassword.error = "Неверный текущий пароль"
+            binding.tilOldPassword.error = getString(R.string.error_wrong_current_password)
             isValid = false
         }
-        if (newPass.length < 4) {
-            binding.tilNewPassword.error = "Минимум 4 символа"
+        if (!Validator.isValidPassword(newPass)) {
+            binding.tilNewPassword.error = getString(R.string.error_password_too_short)
             isValid = false
         }
         if (newPass != confirmPass) {
-            binding.tilConfirmPassword.error = "Пароли не совпадают"
+            binding.tilConfirmPassword.error = getString(R.string.error_passwords_dont_match)
             isValid = false
         }
 
@@ -221,10 +255,14 @@ class ProfileFragment : Fragment() {
             try {
                 val app = requireActivity().application as SudOceanApplication
                 app.repository.changePassword(user, oldPass, newPass)
-                Toast.makeText(requireContext(), "Пароль успешно изменен", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.success_password_changed), Toast.LENGTH_SHORT).show()
                 togglePasswordSection()
             } catch (e: Exception) {
-                val msg = e.message?.replace("java.lang.Exception:", "") ?: "Ошибка смены пароля"
+                val msg = if (e.message?.contains("Unable to resolve host") == true) {
+                    getString(R.string.error_no_internet_password)
+                } else {
+                    getString(R.string.error_service_unavailable)
+                }
                 Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
             }
         }
@@ -232,12 +270,12 @@ class ProfileFragment : Fragment() {
 
     private fun showDeleteAccountConfirmation() {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Удаление аккаунта")
-            .setMessage("Вы уверены, что хотите полностью удалить свой аккаунт? Все данные будут стерты без возможности восстановления.")
-            .setPositiveButton("Удалить") { _, _ ->
+            .setTitle(getString(R.string.delete_account_confirm_title))
+            .setMessage(getString(R.string.delete_account_confirm_message))
+            .setPositiveButton(getString(R.string.btn_delete)) { _, _ ->
                 performAccountDeletion()
             }
-            .setNegativeButton("Отмена", null)
+            .setNegativeButton(getString(R.string.btn_cancel), null)
             .show()
     }
 
@@ -247,12 +285,16 @@ class ProfileFragment : Fragment() {
             try {
                 val app = requireActivity().application as SudOceanApplication
                 app.repository.deleteAccount(user)
-                Toast.makeText(requireContext(), "Аккаунт успешно удален", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.success_account_deleted), Toast.LENGTH_SHORT).show()
                 app.clearUserSession()
                 val navOptions = NavOptions.Builder().setPopUpTo(R.id.nav_graph, true).build()
                 findNavController().navigate(R.id.loginFragment, null, navOptions)
             } catch (e: Exception) {
-                val msg = e.message?.replace("java.lang.Exception:", "") ?: "Ошибка удаления"
+                val msg = if (e.message?.contains("Unable to resolve host") == true) {
+                    getString(R.string.error_no_internet_delete)
+                } else {
+                    getString(R.string.error_service_unavailable)
+                }
                 Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
             }
         }
@@ -261,69 +303,14 @@ class ProfileFragment : Fragment() {
     private fun clearErrors() {
         binding.tilProfileName.error = null
         binding.tilProfilePhone.error = null
+        binding.tilProfileLegalForm.error = null
         binding.tilProfileInn.error = null
         binding.tilProfileKpp.error = null
         binding.tilProfileLegalAddress.error = null
     }
 
     private fun saveProfileChanges() {
-        val user = currentUser ?: return
-        
-        val name = binding.etProfileName.text.toString().trim()
-        val phone = binding.etProfilePhone.text.toString().trim()
-        val inn = binding.etProfileInn.text.toString().trim()
-        val kpp = binding.etProfileKpp.text.toString().trim()
-        val address = binding.etProfileLegalAddress.text.toString().trim()
-
-        clearErrors()
-        var isValid = true
-
-        if (name.isEmpty()) {
-            binding.tilProfileName.error = "Поле обязательно"
-            isValid = false
-        }
-
-        if (!Validator.isValidPhone(phone)) {
-            binding.tilProfilePhone.error = "Некорректный номер"
-            isValid = false
-        }
-
-        if (user.userType == "LEGAL") {
-            if (!Validator.isValidInn(inn, "LEGAL")) {
-                binding.tilProfileInn.error = "ИНН — 10 цифр"
-                isValid = false
-            }
-            if (!Validator.isValidKpp(kpp)) {
-                binding.tilProfileKpp.error = "КПП — 9 цифр"
-                isValid = false
-            }
-            if (address.isEmpty()) {
-                binding.tilProfileLegalAddress.error = "Укажите адрес"
-                isValid = false
-            }
-        }
-
-        if (!isValid) return
-
-        val updatedUser = user.copy(
-            fullName = name,
-            phone = phone,
-            inn = if (user.userType == "LEGAL") inn else null,
-            kpp = if (user.userType == "LEGAL") kpp else null,
-            legalAddress = if (user.userType == "LEGAL") address else null
-        )
-
-        lifecycleScope.launch {
-            try {
-                val app = requireActivity().application as SudOceanApplication
-                app.repository.updateUser(updatedUser)
-                Toast.makeText(requireContext(), "Данные успешно синхронизированы", Toast.LENGTH_SHORT).show()
-                binding.switchEditMode.isChecked = false
-            } catch (e: Exception) {
-                val cleanMsg = e.message?.replace("java.lang.Exception:", "") ?: "Ошибка синхронизации"
-                Toast.makeText(requireContext(), cleanMsg, Toast.LENGTH_LONG).show()
-            }
-        }
+        // Отключено согласно требованиям
     }
 
     private fun setupRecyclerView() {
@@ -337,7 +324,6 @@ class ProfileFragment : Fragment() {
                 }
             },
             onPayClick = { order ->
-                // Извлекаем номер заказа из строки статуса: "Статус (№000000001)"
                 val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
                 val bundle = bundleOf(
                     "order_id" to order.id,
