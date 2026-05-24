@@ -52,26 +52,44 @@ class MainRepository(
         return user.remoteId.replace(Regex("[^\\d]"), "")
     }
 
-    // USER logic
-    suspend fun loginPhysical(phone: String, password: String): User? = userDao.loginPhysical(phone, password)
-    suspend fun loginLegal(inn: String, password: String): User? = userDao.loginLegal(inn, password)
+    private fun normalizeId(identifier: String): String {
+        val clean = identifier.replace(Regex("[^\\d]"), "")
+        return if (clean.length == 11 && clean.startsWith("8")) {
+            "7" + clean.substring(1)
+        } else {
+            clean
+        }
+    }
 
+    // USER logic
     suspend fun isUserExistsLocally(login: String): Boolean {
-        val cleanLogin = login.replace(Regex("[^\\d]"), "")
+        val cleanLogin = normalizeId(login)
         return userDao.getUserByLogin(cleanLogin) != null
+    }
+
+    suspend fun loginByRemoteId(remoteId: String, password: String, type: String): User? {
+        val normalizedId = normalizeId(remoteId)
+        return userDao.loginByRemoteId(normalizedId, password, type)
     }
 
     suspend fun remoteLogin(type: String, identifier: String, password: String): User? {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.loginRemote(identifier, password)
+                val cleanId = normalizeId(identifier)
+                val response = apiService.loginRemote(cleanId, password)
+                
                 if (response.isSuccessful) {
                     val remoteUser = response.body() ?: return@withContext null
-                    val cleanIdentifier = identifier.replace(Regex("[^\\d]"), "")
+                    
+                    val normalizedType = when(remoteUser.user_type.uppercase()) {
+                        "PHYSICAL", "INDIVIDUAL", "ФИЗЛИЦО", "ОБЫЧНЫЙ", "ФИЗ. ЛИЦО" -> "PHYSICAL"
+                        "LEGAL", "COMPANY", "ЮРЛИЦО", "БИЗНЕС", "ЮР. ЛИЦО" -> "LEGAL"
+                        else -> type
+                    }
                     
                     val newUser = User(
-                        remoteId = cleanIdentifier,
-                        userType = remoteUser.user_type,
+                        remoteId = cleanId,
+                        userType = normalizedType,
                         fullName = remoteUser.full_name,
                         phone = remoteUser.phone,
                         password = password,
@@ -81,7 +99,7 @@ class MainRepository(
                         legalForm = remoteUser.form
                     )
                     
-                    val existing = userDao.getUserByLogin(cleanIdentifier)
+                    val existing = userDao.getUserByLogin(cleanId)
                     return@withContext if (existing != null) {
                         val updated = newUser.copy(id = existing.id)
                         userDao.updateUser(updated)
@@ -90,11 +108,16 @@ class MainRepository(
                         val id = userDao.register(newUser)
                         newUser.copy(id = id.toInt())
                     }
+                } else if (response.code() == 401 || response.code() == 404) {
+                    return@withContext null
+                } else {
+                    throw Exception("SERVER_ERROR")
                 }
-                null
+            } catch (e: IOException) {
+                throw Exception("NETWORK_ERROR")
             } catch (e: Exception) {
                 Log.e("1C_AUTH", "Remote login error: ${e.message}")
-                null
+                throw e
             }
         }
     }
@@ -253,24 +276,17 @@ class MainRepository(
     suspend fun insertOrderItems(items: List<OrderItem>) = orderItemDao.insertOrderItems(items)
 
     suspend fun syncOrdersFrom1C(userId: Int) {
-        // Используем Mutex, чтобы избежать параллельной записи и дублирования
         syncMutex.withLock {
             try {
-                val user = userDao.getUserByIdDirect(userId) ?: return
+                val user = userDao.getUserByIdDirect(userId) ?: return@withLock
                 val remoteUserId = getRemoteId(user)
                 val response = apiService.getUserOrders(remoteUserId)
                 if (response.isSuccessful) {
-                    val remoteOrders = response.body() ?: return
-                    
-                    // Удаляем ВСЕ старые заказы и товары пользователя разом (CASCADE DELETE сработает)
+                    val remoteOrders = response.body() ?: return@withLock
                     orderDao.deleteUserOrders(userId)
-
                     remoteOrders.forEach { remoteOrder ->
                         val parsedDate = try { isoDateFormat.parse(remoteOrder.date)?.time ?: System.currentTimeMillis() } catch (e: Exception) { System.currentTimeMillis() }
-                        
-                        // Генерируем ID на основе номера из 1С, чтобы избежать случайных дублей
                         val localId = remoteOrder.remote_id.filter { it.isDigit() }.toIntOrNull() ?: (1000..99999).random()
-                        
                         val localOrder = Order(
                             id = localId, 
                             userId = userId, 
@@ -279,7 +295,6 @@ class MainRepository(
                             status = remoteOrder.status + " (№" + remoteOrder.remote_id + ")"
                         )
                         orderDao.insertOrder(localOrder)
-                        
                         val localItems = remoteOrder.items.map { item ->
                             OrderItem(
                                 orderId = localId, 
@@ -301,41 +316,19 @@ class MainRepository(
     suspend fun downloadAndOpenInvoice(context: Context, order: Order) {
         withContext(Dispatchers.IO) {
             try {
-                Log.d("1C_DOWNLOAD", "Starting download for order status: ${order.status}")
                 val orderNumber = order.status.substringAfterLast("№", "").substringBefore(")")
-                Log.d("1C_DOWNLOAD", "Extracted order number: '$orderNumber'")
-                
-                if (orderNumber.isEmpty()) {
-                    Log.e("1C_DOWNLOAD", "Order number is empty, cannot download.")
-                    return@withContext
-                }
-                
+                if (orderNumber.isEmpty()) return@withContext
                 val response = apiService.downloadInvoice(orderNumber)
-                Log.d("1C_DOWNLOAD", "Response code: ${response.code()}")
-                
                 if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body == null) {
-                        Log.e("1C_DOWNLOAD", "Response body is null")
-                        return@withContext
-                    }
-                    
+                    val body = response.body() ?: return@withContext
                     val fileName = "Invoice_${orderNumber}_${System.currentTimeMillis()}.pdf"
-                    Log.d("1C_DOWNLOAD", "Saving file: $fileName")
-                    
                     val uri = saveFileToDownloads(context, body, fileName)
                     if (uri != null) { 
-                        Log.d("1C_DOWNLOAD", "File saved successfully at: $uri")
                         withContext(Dispatchers.Main) { openPdf(context, uri) } 
-                    } else {
-                        Log.e("1C_DOWNLOAD", "Failed to save file to downloads")
                     }
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("1C_DOWNLOAD", "Server returned error: $errorBody")
                 }
             } catch (e: Exception) { 
-                Log.e("1C_DOWNLOAD", "Critical download error: ${e.message}", e)
+                Log.e("1C_DOWNLOAD", "Critical download error: ${e.message}")
             }
         }
     }
@@ -351,37 +344,26 @@ class MainRepository(
         }
         return try {
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-            if (uri == null) {
-                Log.e("1C_DOWNLOAD", "ContentResolver.insert returned null")
-                return null
-            }
+            if (uri == null) return null
             resolver.openOutputStream(uri)?.use { outputStream ->
                 body.byteStream().use { inputStream -> 
-                    val bytesCopied = inputStream.copyTo(outputStream)
-                    Log.d("1C_DOWNLOAD", "Bytes copied: $bytesCopied")
+                    inputStream.copyTo(outputStream)
                 }
             }
             uri
-        } catch (e: Exception) { 
-            Log.e("1C_DOWNLOAD", "Error in saveFileToDownloads: ${e.message}")
-            null 
-        }
+        } catch (e: Exception) { null }
     }
 
     private fun openPdf(context: Context, uri: Uri) {
         try {
-            Log.d("1C_DOWNLOAD", "Attempting to open PDF: $uri")
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/pdf")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            Log.e("1C_DOWNLOAD", "No PDF viewer found")
-            Toast.makeText(context, "PDF-счет не удалось открыть. Установите приложение для просмотра PDF и повторите попытку.", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Log.e("1C_DOWNLOAD", "Error opening PDF: ${e.message}")
+            Toast.makeText(context, "PDF-счет не удалось открыть.", Toast.LENGTH_LONG).show()
         }
     }
 

@@ -17,15 +17,19 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE inn = :inn AND password = :password AND userType = 'LEGAL' LIMIT 1")
     suspend fun loginLegal(inn: String, password: String): User?
 
-    // Поиск по remoteId (уникальный идентификатор: ИНН или чистый телефон)
+    @Query("SELECT * FROM users WHERE remoteId = :remoteId AND password = :password AND userType = :userType LIMIT 1")
+    suspend fun loginByRemoteId(remoteId: String, password: String, userType: String): User?
+
     @Query("SELECT * FROM users WHERE remoteId = :login LIMIT 1")
     suspend fun getUserByLogin(login: String): User?
 
-    // Поиск просто по телефону (для проверки уникальности)
     @Query("SELECT * FROM users WHERE phone = :phone LIMIT 1")
     suspend fun getUserByPhone(phone: String): User?
 
-    @Insert(onConflict = OnConflictStrategy.ABORT) // Используем ABORT, чтобы Room выдавал ошибку при дубликате
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertUser(user: User): Long
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun register(user: User): Long
 
     @Update

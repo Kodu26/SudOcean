@@ -1,5 +1,7 @@
 package com.example.sudocean.models
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,27 +11,42 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(private val repository: MainRepository) : ViewModel() {
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
+
     fun login(type: String, identifier: String, password: String, onResult: (User?) -> Unit) {
         viewModelScope.launch {
-            // 1. Проверяем локально
-            val localUser = if (type == "PHYSICAL") {
-                repository.loginPhysical(identifier, password)
-            } else {
-                repository.loginLegal(identifier, password)
-            }
+            _isLoading.value = true
+            _errorMessage.value = null
+            
+            try {
+                val cleanId = identifier.replace(Regex("[^\\d]"), "")
+                
+                // 1. Сначала ищем локально (для скорости)
+                var user = repository.loginByRemoteId(cleanId, password, type)
+                
+                if (user == null) {
+                    // 2. Если локально нет (после обновления БД) — идем в 1С
+                    user = repository.remoteLogin(type, identifier, password)
+                }
 
-            if (localUser != null) {
-                // 2. Если есть локально, проверяем актуальность в 1С
-                val isStillExistsIn1C = repository.verifyUserRemote(localUser)
-                if (isStillExistsIn1C) {
-                    onResult(localUser)
+                if (user != null) {
+                    onResult(user)
                 } else {
+                    _errorMessage.value = "WRONG_CREDENTIALS"
                     onResult(null)
                 }
-            } else {
-                // 3. НОВОЕ: Если локально не найден, пробуем авторизоваться через 1С
-                val remoteUser = repository.remoteLogin(type, identifier, password)
-                onResult(remoteUser)
+            } catch (e: Exception) {
+                _errorMessage.value = when {
+                    e.message?.contains("NETWORK_ERROR") == true -> "NETWORK_ERROR"
+                    else -> "SERVER_ERROR"
+                }
+                onResult(null)
+            } finally {
+                _isLoading.value = false
             }
         }
     }

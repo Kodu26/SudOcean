@@ -42,8 +42,29 @@ class LoginFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupObservers()
         resetToDefaultState()
         setupListeners()
+    }
+
+    private fun setupObservers() {
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            binding.LoginButton.isEnabled = !isLoading
+            binding.btnSwitchToBusiness.isEnabled = !isLoading
+            // Можно добавить ProgressBar, если он есть в макете
+        }
+
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                val message = when(it) {
+                    "NETWORK_ERROR" -> "Не удалось выполнить вход. Проверьте подключение к Интернету."
+                    "SERVER_ERROR" -> "Сервис временно недоступен. Повторите попытку позднее."
+                    "WRONG_CREDENTIALS" -> if (currentLoginType == "PHYSICAL") "Неверный телефон или пароль" else "Неверный ИНН или пароль"
+                    else -> "Произошла ошибка при входе"
+                }
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun resetToDefaultState() {
@@ -141,9 +162,6 @@ class LoginFragment : Fragment() {
             if (user != null) {
                 app.saveUserSession(user.id)
                 findNavController().navigate(R.id.action_loginFragment_to_itemFragment)
-            } else {
-                val errorMsg = if (currentLoginType == "PHYSICAL") "Неверный телефон или пароль" else "Неверный ИНН или пароль"
-                Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
