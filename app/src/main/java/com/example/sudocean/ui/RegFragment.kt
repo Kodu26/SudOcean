@@ -1,7 +1,20 @@
 package com.example.sudocean.ui
 
+import android.content.ContentValues
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.text.InputFilter
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.UnderlineSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +32,10 @@ import com.example.sudocean.models.RegViewModel
 import com.example.sudocean.models.RegViewModelFactory
 import com.example.sudocean.utils.PhoneMaskWatcher
 import com.example.sudocean.utils.Validator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 class RegFragment : Fragment() {
 
@@ -72,7 +88,97 @@ class RegFragment : Fragment() {
             updateFieldsVisibility(selectedForm)
         }
         
+        setupPrivacyPolicyLink()
         updateUIForType()
+    }
+
+    private fun setupPrivacyPolicyLink() {
+        val part1 = getString(R.string.privacy_policy_consent_part1)
+        val linkPart = getString(R.string.privacy_policy_link)
+        val fullText = part1 + linkPart
+        val spannableString = SpannableString(fullText)
+        
+        val start = fullText.indexOf(linkPart)
+        val end = start + linkPart.length
+        
+        if (start != -1) {
+            val clickableSpan = object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    downloadPrivacyPolicy()
+                }
+            }
+            spannableString.setSpan(clickableSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannableString.setSpan(UnderlineSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannableString.setSpan(ForegroundColorSpan(resources.getColor(R.color.ocean_primary, null)), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        
+        binding.tvPrivacyPolicy.text = spannableString
+        binding.tvPrivacyPolicy.movementMethod = LinkMovementMethod.getInstance()
+        binding.tvPrivacyPolicy.highlightColor = Color.TRANSPARENT
+    }
+
+    private fun downloadPrivacyPolicy() {
+        lifecycleScope.launch {
+            val uri = withContext(Dispatchers.IO) {
+                try {
+                    val fileName = "Politika_konfidencialnosti_SudOcean.pdf"
+                    val inputStream: InputStream = requireContext().assets.open(fileName)
+                    saveFileToDownloads(inputStream, fileName)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            
+            if (uri != null) {
+                Toast.makeText(requireContext(), getString(R.string.privacy_policy_downloaded), Toast.LENGTH_SHORT).show()
+                openPdf(uri)
+            } else {
+                Toast.makeText(requireContext(), getString(R.string.privacy_policy_download_failed), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun saveFileToDownloads(inputStream: InputStream, fileName: String): Uri? {
+        val resolver = requireContext().contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+        }
+        
+        return try {
+            val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            } else {
+                val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val file = java.io.File(directory, fileName)
+                Uri.fromFile(file)
+            }
+
+            if (uri == null) return null
+            
+            resolver.openOutputStream(uri)?.use { outputStream ->
+                inputStream.use { it.copyTo(outputStream) }
+            }
+            uri
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun openPdf(uri: Uri) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Нет приложения для открытия PDF", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun toggleUserType() {
@@ -172,8 +278,15 @@ class RegFragment : Fragment() {
             }
         }
 
+        if (!binding.cbPrivacyPolicy.isChecked) {
+            Toast.makeText(requireContext(), getString(R.string.error_privacy_policy_required), Toast.LENGTH_LONG).show()
+            isValid = false
+        }
+
         if (!isValid) {
-            Toast.makeText(requireContext(), "Регистрация не завершена. Проверьте ошибки в полях.", Toast.LENGTH_LONG).show()
+            if (binding.cbPrivacyPolicy.isChecked) {
+                Toast.makeText(requireContext(), "Регистрация не завершена. Проверьте ошибки в полях.", Toast.LENGTH_LONG).show()
+            }
             return
         }
 

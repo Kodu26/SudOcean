@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import coil.dispose
 import coil.load
 import com.example.sudocean.R
 import com.example.sudocean.SudOceanApplication
@@ -79,18 +80,24 @@ class ProductDetailFragment : Fragment() {
                     binding.btnDetailPlus.isEnabled = false
                 }
 
-                // Картинка
-                if (!p.imageUrl.isNullOrEmpty()) {
+                // Картинка: Сброс и загрузка
+                binding.ivProductDetail.dispose()
+                binding.ivProductDetail.setImageResource(R.drawable.ic_history)
+
+                if (!p.imageUrl.isNullOrBlank() && p.imageUrl != "null") {
                     try {
                         val cleanBase64 = if (p.imageUrl.contains(",")) p.imageUrl.substringAfter(",") else p.imageUrl
                         val imageBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
                         val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                        binding.ivProductDetail.load(bitmap)
+                        if (bitmap != null) {
+                            binding.ivProductDetail.load(bitmap) {
+                                placeholder(R.drawable.ic_history)
+                                error(R.drawable.ic_history)
+                            }
+                        }
                     } catch (e: Exception) {
                         binding.ivProductDetail.setImageResource(R.drawable.ic_history)
                     }
-                } else {
-                    binding.ivProductDetail.setImageResource(R.drawable.ic_history)
                 }
 
                 // Нажатия

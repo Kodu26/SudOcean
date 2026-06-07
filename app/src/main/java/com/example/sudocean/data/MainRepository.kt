@@ -222,29 +222,44 @@ class MainRepository(
     suspend fun getProductById(productId: Int): Product? = productDao.getProductById(productId)
 
     suspend fun syncProducts() {
-        try {
-            val response = apiService.getProducts()
-            if (response.isSuccessful) {
-                response.body()?.forEach { remote ->
-                    val product = Product(
-                        id = remote.id.toIntOrNull() ?: 0,
-                        name = remote.name,
-                        description = remote.description,
-                        price = remote.price,
-                        imageUrl = remote.imageUrl,
-                        category = remote.category ?: "Без категории",
-                        stock = remote.stock ?: 0
-                    )
-                    productDao.insertProduct(product)
+        withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getProducts()
+                if (response.isSuccessful) {
+                    val remoteProducts = response.body() ?: emptyList()
+                    val products = remoteProducts.map { remote ->
+                        Product(
+                            id = remote.id.filter { it.isDigit() }.toIntOrNull() ?: 0,
+                            name = remote.name,
+                            description = remote.description,
+                            price = remote.price,
+                            imageUrl = remote.imageUrl?.takeIf { it.isNotBlank() && it != "null" },
+                            category = remote.category ?: "Без категории",
+                            stock = remote.stock ?: 0
+                        )
+                    }
+                    
+                    // 1. Вставляем/обновляем полученные товары
+                    productDao.insertProducts(products)
+                    
+                    // 2. Определяем список актуальных ID
+                    val currentIds = products.map { it.id }
+                    
+                    // 3. Удаляем товары, которых больше нет в 1С
+                    productDao.deleteProductsNotInList(currentIds)
+                    
+                    // 4. Очищаем корзину от товаров, которых больше нет
+                    cartDao.deleteOrphanedItems(currentIds)
+                    
+                } else {
+                    throw Exception("1C_UNAVAILABLE")
                 }
-            } else {
+            } catch (e: IOException) {
+                throw Exception("NO_INTERNET")
+            } catch (e: Exception) { 
+                Log.e("1C_SYNC", "Products sync error: ${e.message}")
                 throw Exception("1C_UNAVAILABLE")
             }
-        } catch (e: IOException) {
-            throw Exception("NO_INTERNET")
-        } catch (e: Exception) { 
-            Log.e("1C_SYNC", "Products sync error: ${e.message}")
-            throw Exception("1C_UNAVAILABLE")
         }
     }
 

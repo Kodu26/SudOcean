@@ -5,11 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "products")
 data class Product(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: Int, // Используем ID из 1С как основной ключ
     val name: String,
     val description: String,
     val price: Double,
     val imageUrl: String? = null,
     val category: String = "Без категории",
-    val stock: Int = 0 // Новое поле: Остаток товара
+    val stock: Int = 0
 )

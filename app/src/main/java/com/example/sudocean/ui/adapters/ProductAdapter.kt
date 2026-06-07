@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.dispose
 import coil.load
 import com.example.sudocean.R
 import com.example.sudocean.data.entities.CartItem
@@ -52,7 +53,6 @@ class ProductAdapter(
                 binding.tvStockStatus.text = "В наличии: ${product.stock} шт."
                 binding.tvStockStatus.setTextColor(binding.root.context.getColor(R.color.green))
                 binding.btnAddFirst.isEnabled = true
-                // Блокируем плюс, если в корзине уже максимум
                 binding.btnPlus.isEnabled = quantity < product.stock
                 binding.btnPlus.alpha = if (quantity < product.stock) 1.0f else 0.5f
             } else {
@@ -72,19 +72,25 @@ class ProductAdapter(
                 binding.layoutQuantityItem.visibility = View.GONE
             }
 
-            // Картинка
-            if (!product.imageUrl.isNullOrEmpty()) {
+            // Картинка: Сброс перед загрузкой для исключения дублирования при переиспользовании
+            binding.productImage.dispose() 
+            binding.productImage.setImageResource(R.drawable.ic_history) // Заглушка по умолчанию
+            binding.productImage.imageTintList = null
+
+            if (!product.imageUrl.isNullOrBlank() && product.imageUrl != "null") {
                 try {
                     val cleanBase64 = if (product.imageUrl.contains(",")) product.imageUrl.substringAfter(",") else product.imageUrl
                     val imageBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
                     val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                    binding.productImage.load(bitmap)
-                    binding.productImage.imageTintList = null
+                    if (bitmap != null) {
+                        binding.productImage.load(bitmap) {
+                            placeholder(R.drawable.ic_history)
+                            error(R.drawable.ic_history)
+                        }
+                    }
                 } catch (e: Exception) {
                     binding.productImage.setImageResource(R.drawable.ic_history)
                 }
-            } else {
-                binding.productImage.setImageResource(R.drawable.ic_history)
             }
 
             binding.btnAddFirst.setOnClickListener { onPlus(product) }

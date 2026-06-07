@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [User::class, Product::class, CartItem::class, Order::class, OrderItem::class],
-    version = 10, // Увеличено до 10 для добавления поля legalForm в User
+    version = 11, // Увеличено до 10 для добавления поля legalForm в User
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -65,12 +65,12 @@ abstract class AppDatabase : RoomDatabase() {
 
             suspend fun populateDatabase(productDao: ProductDao) {
                 val products = listOf(
-                    Product(name = "Спасательный жилет", description = "Сертифицированный жилет", price = 2500.0, category = "Безопасность", stock = 15),
-                    Product(name = "Якорь складной", description = "Вес 5кг", price = 8500.0, category = "Снаряжение", stock = 5),
-                    Product(name = "Морской бинокль", description = "7x50, водонепроницаемый", price = 12000.0, category = "Оптика", stock = 0),
-                    Product(name = "Трос капроновый", description = "Диаметр 12мм", price = 3200.0, category = "Снаряжение", stock = 50),
-                    Product(name = "Навигатор Garmin Marine", description = "GPS, экран 7 дюймов", price = 45000.0, category = "Электроника", stock = 3),
-                    Product(name = "Огнетушитель морской", description = "Порошковый, объем 2л", price = 1800.0, category = "Безопасность", stock = 10)
+                    Product(id = 1, name = "Спасательный жилет", description = "Сертифицированный жилет", price = 2500.0, category = "Безопасность", stock = 15),
+                    Product(id = 2, name = "Якорь складной", description = "Вес 5кг", price = 8500.0, category = "Снаряжение", stock = 5),
+                    Product(id = 3, name = "Морской бинокль", description = "7x50, водонепроницаемый", price = 12000.0, category = "Оптика", stock = 0),
+                    Product(id = 4, name = "Трос капроновый", description = "Диаметр 12мм", price = 3200.0, category = "Снаряжение", stock = 50),
+                    Product(id = 5, name = "Навигатор Garmin Marine", description = "GPS, экран 7 дюймов", price = 45000.0, category = "Электроника", stock = 3),
+                    Product(id = 6, name = "Огнетушитель морской", description = "Порошковый, объем 2л", price = 1800.0, category = "Безопасность", stock = 10)
                 )
                 for (product in products) {
                     productDao.insertProduct(product)

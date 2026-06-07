@@ -52,4 +52,10 @@
     <string name="success_account_deleted">Аккаунт удален.</string>
     <string name="error_delete_failed">Не удалось удалить аккаунт. Повторите попытку позднее.</string>
     <string name="error_no_internet_delete">Не удалось удалить аккаунт. Проверьте подключение к Интернету.</string>
+
+    <string name="privacy_policy_consent_part1">"Я даю согласие на обработку персональных данных в соответствии с "</string>
+    <string name="privacy_policy_link">Политикой конфиденциальности</string>
+    <string name="error_privacy_policy_required">Необходимо дать согласие на обработку персональных данных.</string>
+    <string name="privacy_policy_downloaded">Политика конфиденциальности скачана.</string>
+    <string name="privacy_policy_download_failed">Не удалось скачать политику конфиденциальности.</string>
 </resources>
